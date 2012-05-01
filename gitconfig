@@ -1,0 +1,14 @@
+[user]
+	name = Seth Baxter
+	email = me@sethbaxter.com
+[alias]
+	unstage = reset HEAD --
+	last = log -1 HEAD
+  st = status
+  co = commit
+  br = branch
+  hist = log --pretty=format:\"%h %ad | %s%d [%an]\" --graph --date=short
+	type = cat-file -t
+	dump = cat-file -p
+[color]
+	ui = true
