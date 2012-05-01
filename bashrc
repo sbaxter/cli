@@ -53,7 +53,7 @@ fi
      NO_COLOR="\[\e[0m\]"
 
 HOSTNAME="Undefined"
-PS1="\e[0;31m\n[Burley:\W]:\e[m " 
+PS1="\e[0;31m\n[Undefined:\W]:\e[m " 
 # User specific aliases and functions
 if [ "$PS1" ]; then
  echo -ne "\033]2;${HOSTNAME}\007"
