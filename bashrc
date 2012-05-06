@@ -1,33 +1,3 @@
-#git completion
-source ~/.git-completion.bash
-
-# User specific aliases and functions
-alias rm='rm -i '
-alias cp='cp -i '
-alias mv='mv -i '
-
-alias ll="ls -l "
-alias vi="vim "
-
-#git specific aliases
-alias gs='git status '
-alias ga='git add '
-alias gb='git branch '
-alias gc='git commit'
-alias gd='git diff'
-alias go='git checkout '
-alias gk='gitk --all&'
-alias gx='gitx --all'
-
-alias got='git '
-alias get='git '
-
-# Source global definitions
-if [ -f /etc/bashrc ]; then
-	. /etc/bashrc
-fi
-# .bashrc
-
 # Source global definitions
 if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
@@ -52,12 +22,55 @@ fi
          GRAY="\[\033[1;30m\]"
      NO_COLOR="\[\e[0m\]"
 
-HOSTNAME="Undefined"
-PS1="\e[0;31m\n[Undefined:\W]:\e[m " 
+function prompt_git() {
+  local status output flags
+  status="$(git status 2>/dev/null)"
+  [[ $? != 0 ]] && return;
+  output="$(echo "$status" | awk '/# Initial commit/ {print "(init)"}')"
+  [[ "$output" ]] || output="$(echo "$status" | awk '/# On branch/ {print $4}')"
+  [[ "$output" ]] || output="$(git branch | perl -ne '/^\* (.*)/ && print $1')"
+  flags="$(
+    echo "$status" | awk 'BEGIN {r=""} \
+      /^# Changes to be committed:$/        {r=r "+"}\
+      /^# Changes not staged for commit:$/  {r=r "!"}\
+      /^# Untracked files:$/                {r=r "?"}\
+      END {print r}'
+  )"
+  if [[ "$flags" ]]; then
+    output="$output$flags"
+  fi
+  echo "[$output]"
+}
+
+HOSTNAME="unknown"
+function prompter {
+	PS1="$BLUE\n$(prompt_git)$RED[$HOSTNAME:\w]:\e[m "
+}
+PROMPT_COMMAND="prompter"
+
+#git completion
+source ~/.git-completion.bash
+
 # User specific aliases and functions
-if [ "$PS1" ]; then
- echo -ne "\033]2;${HOSTNAME}\007"
-fi
+alias rm='rm -i '
+alias cp='cp -i '
+alias mv='mv -i '
+
+alias ll="ls -l "
+alias vi="vim "
+
+#git specific aliases
+alias gs='git status '
+alias ga='git add '
+alias gb='git branch '
+alias gc='git commit'
+alias gd='git diff'
+alias go='git checkout '
+alias gk='gitk --all&'
+alias gx='gitx --all'
+
+alias got='git '
+alias get='git '
 
 function my
 {
