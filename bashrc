@@ -365,13 +365,35 @@ function dirs
 }
 
 #minification
+export minifier=/Applications/Java/yuicompressor-2.4.7/build/yuicompressor-2.4.7.jar
+
 function minime {
-  java -jar /Applications/Java/yuicompressor-2.4.7/build/yuicompressor-2.4.7.jar $1 -o $2
+  java -jar $minifier $1 -o $2
 }
 
 #less and then minify ($1 = project name)
 function lessmin {
   lessc less/$1.less > $1-style.css
-  java -jar /Applications/Java/yuicompressor-2.4.7/build/yuicompressor-2.4.7.jar $1-style.css -o $1-style.min.css
+  java -jar $minifier $1-style.css -o $1-style.min.css
 }
 
+
+# create a blank project - $1 = project name
+# dependencies: yuicompressor, lessc, grunt, git
+function blanko {
+	mkdir $1
+	cd $1
+	git clone git://github.com/sbaxter/shb_starter.git .
+	rm -rf .git
+	perl -pi -e s/PROJECTNAME/$1/g index.html
+	mv css/less/bootstrap.less css/less/$1.less
+	lessc css/less/$1.less > css/$1-style.css
+	java -jar $minifier css/$1-style.css -o css/$1-style.min.css
+	grunt init:gruntfile
+	git init
+	git add *
+	git add .htaccess
+	git add .gitignore
+	git commit -m "initial commit"
+	echo 'project ready'
+}
