@@ -386,6 +386,8 @@ function blanko {
 	git clone git://github.com/sbaxter/shb_starter.git .
 	rm -rf .git
 	perl -pi -e s/PROJECTNAME/$1/g index.html
+	perl -pi -e s/PROJECTNAME/$1/g js/scripts/.build.bash
+	perl -pi -e s/PROJECTNAME/$1/g js/plugins/.build.bash
 	mv css/less/bootstrap.less css/less/$1.less
 	lessc css/less/$1.less > css/$1-style.css
 	java -jar $minifier css/$1-style.css -o css/$1-style.min.css
