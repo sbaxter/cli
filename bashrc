@@ -481,3 +481,22 @@ function randomShuffle {
         elements[$randPos]=${elements[$length - $i - 1]} 
     done
 }
+
+#check for php syntax errors
+function check 
+{
+  if [ -z $1 ]; then
+    echo 'Usage: check filename[.php]'
+    echo ' performs a syntax check of the file (appending ".php" as needed)'
+  else
+    if [ -f $1 ]; then
+      php -l $1
+    elif [ -f $1.php ]; then
+      php -l $1.php
+    elif [ -f $1php ]; then
+      php -l $1php
+    else
+      echo "Cannot find the file $1"
+    fi  
+  fi  
+}
