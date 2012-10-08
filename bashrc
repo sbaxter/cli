@@ -37,16 +37,25 @@ function prompt_git() {
       END {print r}'
   )"
   if [[ "$flags" ]]; then
-    output="$output$flags"
+    output="$output$LIGHT_BLUE$flags$RED"
   fi
   echo "[$output]"
 }
 
 HOSTNAME="unknown"
 function prompter {
-	PS1="$BLUE\n$(prompt_git)$RED[$HOSTNAME:\w]:\e[m "
+  colwidth=$(tput cols)
+  if [ $colwidth -lt 120 ]; then
+    PS1="$RED\n$(prompt_git)$RED[$HOSTNAME($USER):\W]:\e[m "
+  else
+    PS1="$RED\n$(prompt_git)$RED[$HOSTNAME($USER):\w]:\e[m "
+	fi
 }
 PROMPT_COMMAND="prompter"
+
+#Directory Colors
+LS_COLORS='di=0;32'
+export LS_COLORS
 
 #git completion
 source ~/.git-completion.bash
@@ -60,17 +69,22 @@ alias ll="ls -l "
 alias vi="vim "
 
 #git specific aliases
-alias gs='git status '
+alias hist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
+alias gst='git status '
 alias ga='git add '
 alias gb='git branch '
 alias gc='git commit'
 alias gd='git diff'
 alias go='git checkout '
-alias gk='gitk --all&'
-alias gx='gitx --all'
+alias gpo='git push origin '
 
 alias got='git '
 alias get='git '
+
+function lookat 
+{
+  vim -R $1
+}
 
 function my
 {
@@ -367,8 +381,44 @@ function dirs
 #minification
 export minifier=/Applications/Java/yuicompressor-2.4.7/build/yuicompressor-2.4.7.jar
 
-function minime {
-  java -jar $minifier $1 -o $2
+#compile less and then minify ($1 = project name, $2 = if defined, skip the minification)
+function lm {
+  if [ -z $1 ]; then
+    echo "please specify a target .less file: lm {project_name}"
+  else
+    file="less/$1.less"
+    if [ -f $file ]; then
+      echo "compiling ${file}"
+      lessc less/$1.less > $1-style.css
+      if [ -z $2 ]; then
+        echo "minfying the css file"
+        java -jar $minifier $1-style.css -o $1-style.min.css
+        echo "done."
+      else
+        echo "less compiled (skipping the minification)."
+      fi
+    else
+     echo "target file does not exist! (./$file)" 
+    fi
+  fi
+}
+
+function min {
+  if [ -z $1 ]; then
+    echo 'please specify a target: min {target} {target_extension}'
+  else
+    if [ -z $2 ]; then
+      echo 'please specify a file type: min {target} {target_extension}'
+    else
+      if [ -f $1.$2 ]; then
+        echo "performing $2 minification"
+        java -jar $minifier $1.$2 -o $1.min.$2
+        echo "done."
+      else
+        echo "can't find ./$1.$2"
+      fi
+    fi
+  fi
 }
 
 #less and then minify ($1 = project name)
@@ -377,29 +427,37 @@ function lessmin {
   java -jar $minifier $1-style.css -o $1-style.min.css
 }
 
-
 # create a blank project - $1 = project name
 # dependencies: yuicompressor, lessc, grunt, git
 function blanko {
-	mkdir $1
-	cd $1
-	git clone git://github.com/sbaxter/shb_starter.git .
-	rm -rf .git
-	perl -pi -e s/PROJECTNAME/$1/g index.html
-	perl -pi -e s/PROJECTNAME/$1/g js/scripts/.build.bash
-	perl -pi -e s/PROJECTNAME/$1/g js/plugins/.build.bash
-	mv css/less/bootstrap.less css/less/$1.less
-	lessc css/less/$1.less > css/$1-style.css
-	java -jar $minifier css/$1-style.css -o css/$1-style.min.css
-	cat js/plugins/initial.js > js/$1-plugins.js
-	cat js/scripts/initial.js > js/$1-main.js
-	java -jar $minifier js/$1-plugins.js -o js/$1-plugins.min.js
-	java -jar $minifier js/$1-main.js -o js/$1-main.min.js
-	grunt init:gruntfile
-	git init
-	git add *
-	git add .htaccess
-	git add .gitignore
-	git commit -m "initial commit"
-	echo 'project ready'
+  if [ -z $1 ]; then
+    echo "please specify a project name: blanko {project_name}"
+  else
+    if [ ! -f $1 -a ! -d $1 ]; then
+      echo "creating the $1 project"
+      mkdir $1
+      cd $1
+      git clone git://github.com/sbaxter/shb_starter.git .
+      rm -rf .git
+      perl -pi -e s/PROJECTNAME/$1/g index.html
+      perl -pi -e s/PROJECTNAME/$1/g js/scripts/.build.bash
+      perl -pi -e s/PROJECTNAME/$1/g js/plugins/.build.bash
+      mv css/less/bootstrap.less css/less/$1.less
+      lessc css/less/$1.less > css/$1-style.css
+      java -jar $minifier css/$1-style.css -o css/$1-style.min.css
+      cat js/plugins/initial.js > js/$1-plugins.js
+      cat js/scripts/initial.js > js/$1-main.js
+      java -jar $minifier js/$1-plugins.js -o js/$1-plugins.min.js
+      java -jar $minifier js/$1-main.js -o js/$1-main.min.js
+			grunt init:gruntfile
+      git init
+      git add *
+      git add .htaccess
+      git add .gitignore
+      git commit -m "initial commit"
+      echo "project ready"
+    else
+      echo "$1 already exists . . . no can do."
+    fi
+  fi
 }
