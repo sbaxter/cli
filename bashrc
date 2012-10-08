@@ -421,12 +421,6 @@ function min {
   fi
 }
 
-#less and then minify ($1 = project name)
-function lessmin {
-  lessc less/$1.less > $1-style.css
-  java -jar $minifier $1-style.css -o $1-style.min.css
-}
-
 # create a blank project - $1 = project name
 # dependencies: yuicompressor, lessc, grunt, git
 function blanko {
@@ -460,4 +454,30 @@ function blanko {
       echo "$1 already exists . . . no can do."
     fi
   fi
+}
+
+# listen for GA activity and print it to the screen
+function sniff {
+	#tcpdump -ANi en0 'host www.google-analytics.com and port http'
+	tcpdump -ANi en0 'host www.google-analytics.com and port http' > ~/ga.log	
+}
+
+function randomShuffle {
+		touch x;
+    while read line
+    do  
+        elements[$length]=$line
+        length=$(($length + 1))
+    done
+    firstN=${1:-$length}
+    if [ $firstN -gt $length ]
+    then
+        firstN=$length
+    fi  
+    for ((i=0; $i < $firstN; i++))
+    do  
+        randPos=$(($RANDOM % ($length - $i) ))
+        echo "${elements[$randPos]}" >> x
+        elements[$randPos]=${elements[$length - $i - 1]} 
+    done
 }
