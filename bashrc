@@ -398,7 +398,7 @@ function lm {
         echo "less compiled (skipping the minification)."
       fi
     else
-     echo "target file does not exist! (./$file)" 
+     echo "target file does not exist! (./less/$file)" 
     fi
   fi
 }
@@ -458,12 +458,12 @@ function blanko {
 
 # listen for GA activity and print it to the screen
 function sniff {
-	#tcpdump -ANi en0 'host www.google-analytics.com and port http'
-	tcpdump -ANi en0 'host www.google-analytics.com and port http' > ~/ga.log	
+  #tcpdump -ANi en0 'host www.google-analytics.com and port http'
+  tcpdump -ANi en0 'host www.google-analytics.com and port http' > ~/ga.log  
 }
 
 function randomShuffle {
-		touch x;
+    touch x;
     while read line
     do  
         elements[$length]=$line
