@@ -4,6 +4,5 @@ set ts=2
 set shiftwidth=2
 set expandtab
 set hlsearch
-set statusline=\ %{HasPaste()}%F%m%r%h\ %w\ \ CWD:\ %r%{CurDir()}%h\ \ \ Line:\ %l/%L:%c
 au BufNewFile,BufRead *.less set filetype=less
 au BufNewFile,BufRead *.json set filetype=json
