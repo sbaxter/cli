@@ -1,6 +1,6 @@
 # Source global definitions
 if [ -f /etc/bashrc ]; then
-	. /etc/bashrc
+  . /etc/bashrc
 fi
 
 ### COLORS ###
@@ -49,7 +49,7 @@ function prompter {
     PS1="$RED\n$(prompt_git)$RED[$HOSTNAME($USER):\W]:\e[m "
   else
     PS1="$RED\n$(prompt_git)$RED[$HOSTNAME($USER):\w]:\e[m "
-	fi
+  fi
 }
 PROMPT_COMMAND="prompter"
 
@@ -357,11 +357,11 @@ function taritup {
 function untar
 {
   FT=$(file -b $1 | awk '{print $1}')
-	  if [ "$FT" = "bzip2" ]; then
-			tar xvjf "$1"
-		elif [ "$FT" = "gzip" ]; then
-			tar xvzf "$1"
-		fi
+    if [ "$FT" = "bzip2" ]; then
+      tar xvjf "$1"
+    elif [ "$FT" = "gzip" ]; then
+      tar xvzf "$1"
+    fi
 }
 
 function back
@@ -449,7 +449,7 @@ function blanko {
       cat js/scripts/initial.js > js/$1-main.js
       java -jar $minifier js/$1-plugins.js -o js/$1-plugins.min.js
       java -jar $minifier js/$1-main.js -o js/$1-main.min.js
-			grunt init:gruntfile
+      grunt init:gruntfile
       git init
       git add *
       git add .htaccess
