@@ -76,7 +76,6 @@ alias gb='git branch '
 alias gc='git commit'
 alias gd='git diff'
 alias go='git checkout '
-alias gpo='git push origin '
 
 alias got='git '
 alias get='git '
@@ -498,5 +497,19 @@ function check
     else
       echo "Cannot find the file $1"
     fi  
+  fi  
+}
+
+#push current branch (or specified branch) to remote repo "origin"
+function gp {
+  local status branch
+  if [ -z $1 ]; then
+    status="$(git status 2>/dev/null)"
+    branch="$(echo "$status" | awk '/# On branch/ {print $4}')"
+    echo "pushing to origin/$branch"
+    git push origin $branch
+  else
+    echo "pushing to origin/$1"
+    git push origin $1
   fi  
 }
