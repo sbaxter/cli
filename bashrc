@@ -513,3 +513,18 @@ function gp {
     git push origin $1
   fi  
 }
+
+
+function db {
+  if [ -z $1 ]; then
+    echo 'specify a database!'
+  else
+    if [ -z $2 ]; then
+      mysql $1
+    elif [ -z $3 ]; then
+      mysql -vvv $1 < $2 
+    else
+      mysql -t -vvv $1 < $2 >> $3
+    fi
+  fi
+}
