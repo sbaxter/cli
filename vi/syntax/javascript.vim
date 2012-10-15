@@ -18,11 +18,6 @@ if !exists("main_syntax")
   let main_syntax = 'javascript'
 endif
 
-" Drop fold if it set but vim doesn't support it.
-if version < 600 && exists("javaScript_fold")
-  unlet javaScript_fold
-endif
-
 "" dollar sign is permitted anywhere in an identifier
 setlocal iskeyword+=$
 
@@ -191,19 +186,6 @@ syn match javaScriptOpSymbols    "=\{1,3}\|!==\|!=\|<\|>\|>=\|<=\|++\|+=\|--\|-=
 syn match   javaScriptEndColons    "[;,]"
 syn match   javaScriptLogicSymbols "\(&&\)\|\(||\)"
 
-" JavaScriptFold Function {{{
-
-function! JavaScriptFold()
-  setl foldmethod=syntax
-  setl foldlevelstart=1
-  syn region foldBraces start=/{/ end=/}/ transparent fold keepend extend
-
-  setl foldtext=FoldText()
-endfunction
-
-au FileType javascript call JavaScriptFold()
-
-" }}}
 
 " Define the default highlighting.
 " For version 5.7 and earlier: only when not done already
