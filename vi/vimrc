@@ -6,3 +6,4 @@ set expandtab
 set hlsearch
 au BufNewFile,BufRead *.less set filetype=less
 au BufNewFile,BufRead *.json set filetype=json
+au BufNewFile,BufRead *.md set filetype=md
