@@ -6,8 +6,8 @@ fi
 ### COLORS ###
           RED="\[\033[0;31m\]"
     LIGHT_RED="\[\033[1;31m\]"
-       YELLOW="\[\033[1;33m\]"
-       ORANGE="\[\033[0;33m\]"
+       YELLOW="\[\033[0;33m\]"
+ LIGHT_YELLOW="\[\033[1;33m\]"
          BLUE="\[\033[0;34m\]"
    LIGHT_BLUE="\[\033[1;34m\]"
         GREEN="\[\033[0;32m\]"
