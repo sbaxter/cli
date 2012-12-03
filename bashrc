@@ -45,8 +45,9 @@ function prompt_git() {
 HOSTNAME="unknown"
 function prompter {
   colwidth=$(tput cols)
+  howfardown=$(echo `pwd` | sed 's/[^/]//g')
   if [ $colwidth -lt 120 ]; then
-    PS1="$RED\n$(prompt_git)$RED[$HOSTNAME($USER):\W]:\e[m "
+    PS1="$RED\n$(prompt_git)$RED[$HOSTNAME($USER):$howfardown\W]:\e[m "
   else
     PS1="$RED\n$(prompt_git)$RED[$HOSTNAME($USER):\w]:\e[m "
   fi
