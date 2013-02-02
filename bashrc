@@ -80,6 +80,7 @@ alias go='git checkout '
 
 alias got='git '
 alias get='git '
+alias groot='cd $(git rev-parse --show-cdup) '
 
 function lookat 
 {
