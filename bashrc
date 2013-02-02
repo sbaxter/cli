@@ -529,3 +529,11 @@ function db {
     fi
   fi
 }
+
+function dumpme {
+  nice mysqldump -u sethbaxt -p $1 > $2.dump.sql
+  echo 'Done. Now zipping.'
+  nice gzip $2.dump.sql
+  echo 'Done.'
+  ls -l $2.dump.sql.gz
+}
