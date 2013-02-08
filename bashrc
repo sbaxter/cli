@@ -1,9 +1,27 @@
+# TERMINAL
+# -------------------------------------------------------------------------
 # Source global definitions
 if [ -f /etc/bashrc ]; then
   . /etc/bashrc
 fi
 
-### COLORS ###
+function reload {
+  source ~/.bashrc
+}
+
+function title {
+  echo -ne "\033]2;$1\007"
+}
+
+function setclock {
+  rdate -s 129.6.15.28
+}
+
+#Directory Colors
+LS_COLORS='di=0;32'
+export LS_COLORS
+
+#Colors
           RED="\[\033[0;31m\]"
     LIGHT_RED="\[\033[1;31m\]"
        YELLOW="\[\033[0;33m\]"
@@ -30,10 +48,10 @@ function prompt_git() {
   [[ "$output" ]] || output="$(echo "$status" | awk '/# On branch/ {print $4}')"
   [[ "$output" ]] || output="$(git branch | perl -ne '/^\* (.*)/ && print $1')"
   flags="$(
-    echo "$status" | awk 'BEGIN {r=""} \
-      /^# Changes to be committed:$/        {r=r "+"}\
-      /^# Changes not staged for commit:$/  {r=r "!"}\
-      /^# Untracked files:$/                {r=r "?"}\
+    echo "$status" | awk 'BEGIN {r=""}
+      /^# Changes to be committed:$/        {r=r "+"}
+      /^# Changes not staged for commit:$/  {r=r "!"}
+      /^# Untracked files:$/                {r=r "?"}
       END {print r}'
   )"
   if [[ "$flags" ]]; then
@@ -53,23 +71,27 @@ function prompter {
   fi
 }
 PROMPT_COMMAND="prompter"
+# -------------------------------------------------------------------------
 
-#Directory Colors
-LS_COLORS='di=0;32'
-export LS_COLORS
 
-#git completion
-source ~/.git-completion.bash
-
-# User specific aliases and functions
+# ALIASES
+# -------------------------------------------------------------------------
 alias rm='rm -i '
 alias cp='cp -i '
 alias mv='mv -i '
 
 alias ll="ls -l "
 alias vi="vim "
+# -------------------------------------------------------------------------
 
-#git specific aliases
+
+# GIT
+# -------------------------------------------------------------------------
+
+#git completion
+source ~/.git-completion.bash
+
+#aliases
 alias hist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
 alias gst='git status '
 alias ga='git add '
@@ -82,269 +104,268 @@ alias got='git '
 alias get='git '
 alias groot='cd $(git rev-parse --show-cdup) '
 
-function lookat 
-{
-  vim -R $1
+#push current branch (or specified branch) to remote repo "origin"
+function gp {
+  local status branch
+  if [ -z $1 ]; then
+    status="$(git status 2>/dev/null)"
+    branch="$(echo "$status" | awk '/# On branch/ {print $4}')"
+    echo "pushing to origin/$branch"
+    git push origin $branch
+  else
+    echo "pushing to origin/$1"
+    git push origin $1
+  fi
 }
 
-function my
-{
-  chown `whoami`:`whoami` $1
+#pull current branch (or specified branch) from remote repo "origin"
+function gu {
+  local status branch
+  if [ -z $1 ]; then
+    status="$(git status 2>/dev/null)"
+    branch="$(echo "$status" | awk '/# On branch/ {print $4}')"
+    echo "pulling from origin/$branch"
+    git pull origin $branch
+  else
+    echo "pulling from origin/$1"
+    git pull origin $1
+  fi
+}
+# -------------------------------------------------------------------------
+
+
+# PROCESS MGMT
+# -------------------------------------------------------------------------
+function dojob {
+  source ~/.jobs/$1
 }
 
-function title
-{
-  echo -ne "\033]2;$1\007"
+function start {
+  /etc/init.d/$1 star
 }
 
-function findstr
-{
-  grep -i -n -R $1 * | grep -v ".svn" | less
+function restart {
+  /etc/init.d/$1 restar
 }
 
-function dojob
-{
-  source ~/.jobs/$1 
-}
-
-function upcase
-{
-  sed -i 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/' $1
-}
-
-function downcase
-{
-  sed -i 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' $1
-}
-
-function setclock
-{
-  rdate -s 129.6.15.28
-}
-
-function owner ()
-{
-  chown -R $1 *
-  chgrp -R $1 *
-}
-
-function addtotar ()
-{
-  tar -rf $1 $2
-}
-
-function reload
-{
-  source ~/.bashrc
-}
-
-function start
-{
-  /etc/init.d/$1 start
-}
-
-function restart
-{
-  /etc/init.d/$1 restart
-}
-
-function stop
-{
+function stop {
   /etc/init.d/$1 stop
 }
 
-function isrunning
-{
+function isrunning {
   ps -ef | grep $1 | grep -v grep
 }
 
-function specificcloseport
-{
-  iptables -D INPUT -p tcp -m state --state NEW -m tcp --dport $1 -s $2 -j ACCEPT
+function isinstalled {
+  rpm -qa | grep -i $1
+}
+# -------------------------------------------------------------------------
+
+
+# SED
+# -------------------------------------------------------------------------
+function dedup {
+  sed -i '$!N; /^\(.*\)\n\1$/!P; D' $1
 }
 
-function specificopenport
-{
-  iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport $1 -s $2 -j ACCEPT
+function upcase {
+  sed -i 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/' $1
 }
 
-function openport
-{
-  iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport $1 -j ACCEPT
+function downcase {
+  sed -i 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' $1
 }
 
-function closeport
-{
-  iptables -D INPUT -p tcp -m state --state NEW -m tcp --dport $1 -j ACCEPT
+function linecount {
+  cat "$1" | grep -c $
 }
 
-function listenports
-{
-  lsof | grep LISTEN
-}
-
-function linecount
-{
-  cat "$1" | grep -c $ 
-}
-
-function unDOS
-{
+function unDOS {
   sed -i 's/.$//' $1
 }
 
-function noextraspaces
-{
+function noextraspaces {
   sed -i 's/^[ \t]*//;s/[ \t]*$//' $1
 }
 
-function notrailinglines
-{
+function notrailinglines {
   sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' $1
 }
 
-function noHTML
-{
+function noHTML {
   sed -i -e :a -e 's/<[^>]*>//g;/</N;//ba' $1
 }
 
-function isinstalled
-{
-  rpm -qa | grep -i $1
-}
-
-function tardate
-{
-  DUMPDATE=`date +%F-%H-%M`;
-  tar -vcf ~/$1.$DUMPDATE.tar *
-}
-
-function unspacefilenames
-{
-  for f in *; do mv "$f" `echo $f | tr ' ' '_'`; done
-}
-
-function clonedirsfrom
-{
-  (cd $1; find -type d ! -name .) | xargs mkdir
-}
-
-function findtexti
-{
-  grep -n -i -R "$1" * | grep -v svn | grep -v "Binary file"
-}
-
-function findtext
-{
-  grep -n -R "$1" * | grep -v svn | grep -v "Binary file"
-}
-
-function wipe
-{
-  rm -R -f $1
-}
-
-function phperrors
-{
-  tail -100 /var/log/httpd/error_log
-}
-
-function reassign
-{
-  if [ -z $1 ]; then
-   read -p "Give the name of the link: " linkname
-  fi  
-  if [ -z $2 ]; then
-   read -p "Give the name of the new target: " target
-  fi  
-
-  # Make sure the thing we are removing is a sym link.
-  if [ ! -L $1 ]; then
-   echo "Sorry. $1 is not a symbolic link"
-
-  # attempt to create the file if it does not exist.
-  else
-   if [ ! -e $2 ]; then 
-     touch $2  
-     # mention the fact that we had to create it.
-     echo "Created empty file named $2"
-   fi  
-   
-   # make sure the target is present.
-   if [ ! -e $2 ]; then
-     echo "Unable to find or create $2."
-   else
-     # nuke the link
-     rm -f $1
-     # link
-     ln -s $2 $1
-     # confirm by showing.
-     ls -l $1
-   fi  
-  fi  
-}
-
-function symlink
-{
-# $1 is the name of some directory to be replaced by a symlink.
-# $2 is the name of directory we want to symlink to, instead.
-  mv $1 $1.bak
-  ln -s $2 $1
-  rmdir $1.bak
-}
-
-function findtextinfiles {
- find . -name "$1" | xargs grep -n "$2" 
-}
-
-function save {
- mv $1 $1.saved 
-}
-
-function restore {
- mv $1.saved $1 
-}
-
-function copythisdirto
-{
-  cp -r -p -P -u * $1
+function trailingspaces {
+  sed -i '' -e's/[ \t]*$//' $1
 }
 
 function doublespace {
- sed -i 'G' $1 
-} 
+  sed -i 'G' $1
+}
 
 function safedoublespace {
- sed -i '/^$/d;G' $1 
+  sed -i '/^$/d;G' $1
 }
 
 function singlespace {
- sed -i 'n;d' $1
+  sed -i 'n;d' $1
 }
 
 function blanklinebefore {
- sed -i "/$1/{x;p;x;}" $2 
+  sed -i "/$1/{x;p;x;}" $2
 }
 
 function blanklineafter {
- sed -i "/$1/G" $2 
+  sed -i "/$1/G" $2
 }
 
-
 function reverseline {
- sed -i '/\n/!G;s/\(.\)\(.*\n\)/&\2\1/;//D;s/.//' $1 
+  sed -i '/\n/!G;s/\(.\)\(.*\n\)/&\2\1/;//D;s/.//' $1
 }
 
 function appendlines {
- sed -e :a -e -i '/\\$/N; s/\\\n//; ta' $1 
+  sed -e :a -e -i '/\\$/N; s/\\\n//; ta' $1
+}
+# -------------------------------------------------------------------------
+
+
+# PORTS
+# -------------------------------------------------------------------------
+function specificcloseport {
+  iptables -D INPUT -p tcp -m state --state NEW -m tcp --dport $1 -s $2 -j ACCEPT
+}
+
+function specificopenport {
+  iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport $1 -s $2 -j ACCEPT
+}
+
+function openport {
+  iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport $1 -j ACCEPT
+}
+
+function closeport {
+  iptables -D INPUT -p tcp -m state --state NEW -m tcp --dport $1 -j ACCEPT
+}
+
+function listenports {
+  lsof | grep LISTEN
+}
+
+# listen for GA activity and print it to the screen
+function sniff {
+  #tcpdump -ANi en0 'host www.google-analytics.com and port http'
+  tcpdump -ANi en0 'host www.google-analytics.com and port http' > ga.log
+}
+# -------------------------------------------------------------------------
+
+
+# DIRECTORY AND FILE
+# -------------------------------------------------------------------------
+function lookat {
+  vim -R $1
+}
+
+function findtextinfiles {
+  find . -name "$1" | xargs grep -n "$2"
+}
+
+function save {
+  mv $1 $1.saved
+}
+
+function restore {
+  mv $1.saved $1
 }
 
 function follow {
- cat $1; tail -F $1 & 
-} 
+  cat $1; tail -F $1 &
+}
 
-function dedup {
- sed -i '$!N; /^\(.*\)\n\1$/!P; D' $1 
+function back {
+  cd $OLDPWD
+}
+
+function lodev {
+  cd /Library/WebServer/Documents
+}
+
+function dir {
+  ls -l | grep ^d
+}
+
+function unspacefilenames {
+  for f in *; do mv "$f" `echo $f | tr ' ' '_'`; done
+}
+
+function wipe {
+  rm -R -f $1
+}
+
+function clonedirsfrom {
+  (cd $1; find -type d ! -name .) | xargs mkdir
+}
+
+function copythisdirto {
+  cp -r -p -P -u * $1
+}
+
+function findtexti {
+  grep -n -i -R "$1" * | grep -v svn | grep -v "Binary file"
+}
+
+function findtext {
+  grep -n -R "$1" * | grep -v svn | grep -v "Binary file"
+}
+
+function findstr {
+  grep -i -n -R $1 * | grep -v ".svn" | less
+}
+
+function randomShuffle {
+    touch x;
+    while read line
+    do
+        elements[$length]=$line
+        length=$(($length + 1))
+    done
+    firstN=${1:-$length}
+    if [ $firstN -gt $length ]
+    then
+        firstN=$length
+    fi
+    for ((i=0; $i < $firstN; i++))
+    do
+        randPos=$(($RANDOM % ($length - $i) ))
+        echo "${elements[$randPos]}" >> x
+        elements[$randPos]=${elements[$length - $i - 1]}
+    done
+}
+# -------------------------------------------------------------------------
+
+
+# FILE PERMISSIONS
+# -------------------------------------------------------------------------
+function my {
+  chown `whoami`:`whoami` $1
+}
+
+function owner () {
+  chown -R $1 *
+  chgrp -R $1 *
+}
+# -------------------------------------------------------------------------
+
+
+# FILE COMPRESSION
+# -------------------------------------------------------------------------
+function addtotar () {
+  tar -rf $1 $2
+}
+
+function tardate {
+  DUMPDATE=`date +%F-%H-%M`;
+  tar -vcf ~/$1.$DUMPDATE.tar *
 }
 
 function taritup {
@@ -355,8 +376,7 @@ function taritup {
   tar -zcf ~/$tarball.$now.tar.gz *
 }
 
-function untar
-{
+function untar {
   FT=$(file -b $1 | awk '{print $1}')
     if [ "$FT" = "bzip2" ]; then
       tar xvjf "$1"
@@ -364,21 +384,57 @@ function untar
       tar xvzf "$1"
     fi
 }
+# -------------------------------------------------------------------------
 
-function back
-{
-  cd $OLDPWD
+
+# SYM LINK
+# -------------------------------------------------------------------------
+function reassign {
+  if [ -z $1 ]; then
+   read -p "Give the name of the link: " linkname
+  fi
+  if [ -z $2 ]; then
+   read -p "Give the name of the new target: " targe
+  fi
+
+  # Make sure the thing we are removing is a sym link.
+  if [ ! -L $1 ]; then
+   echo "Sorry. $1 is not a symbolic link"
+
+  # attempt to create the file if it does not exist.
+  else
+   if [ ! -e $2 ]; then
+     touch $2
+     # mention the fact that we had to create it.
+     echo "Created empty file named $2"
+   fi
+
+   # make sure the target is present.
+   if [ ! -e $2 ]; then
+     echo "Unable to find or create $2."
+   else
+     # nuke the link
+     rm -f $1
+     # link
+     ln -s $2 $1
+     # confirm by showing.
+     ls -l $1
+   fi
+  fi
 }
 
-function lodev {
-  cd /Library/WebServer/Documents
+function symlink {
+# $1 is the name of some directory to be replaced by a symlink.
+# $2 is the name of directory we want to symlink to, instead.
+  mv $1 $1.bak
+  ln -s $2 $1
+  rmdir $1.bak
 }
+# -------------------------------------------------------------------------
 
-function dirs
-{
-  ls -l | grep ^d
-}
 
+# USEFUL FRONT-ENDY STUFF
+# -------------------------------------------------------------------------
 #minification
 export minifier=/Applications/Java/yuicompressor-2.4.7/build/yuicompressor-2.4.7.jar
 
@@ -399,7 +455,7 @@ function lm {
         echo "less compiled (skipping the minification)."
       fi
     else
-     echo "target file does not exist! (./less/$file)" 
+     echo "target file does not exist! (./less/$file)"
     fi
   fi
 }
@@ -421,70 +477,17 @@ function min {
     fi
   fi
 }
+# -------------------------------------------------------------------------
 
-# create a blank project - $1 = project name
-# dependencies: yuicompressor, lessc, grunt, git
-function blanko {
-  if [ -z $1 ]; then
-    echo "please specify a project name: blanko {project_name}"
-  else
-    if [ ! -f $1 -a ! -d $1 ]; then
-      echo "creating the $1 project"
-      mkdir $1
-      cd $1
-      git clone git://github.com/sbaxter/shb_starter.git .
-      rm -rf .git
-      perl -pi -e s/PROJECTNAME/$1/g index.html
-      perl -pi -e s/PROJECTNAME/$1/g js/modules/.build
-      perl -pi -e s/PROJECTNAME/$1/g js/plugins/.build
-      mv css/less/bootstrap.less css/less/$1.less
-      lessc css/less/$1.less > css/$1-style.css
-      java -jar $minifier css/$1-style.css -o css/$1-style.min.css
-      cat js/plugins/initial.js > js/$1-plugins.js
-      cat js/modules/initial.js > js/$1-main.js
-      java -jar $minifier js/$1-plugins.js -o js/$1-plugins.min.js
-      java -jar $minifier js/$1-main.js -o js/$1-main.min.js
-      grunt init:gruntfile
-      git init
-      git add *
-      git add .htaccess
-      git add .gitignore
-      git commit -m "initial commit"
-      echo "project ready"
-    else
-      echo "$1 already exists . . . no can do."
-    fi
-  fi
-}
 
-# listen for GA activity and print it to the screen
-function sniff {
-  #tcpdump -ANi en0 'host www.google-analytics.com and port http'
-  tcpdump -ANi en0 'host www.google-analytics.com and port http' > ~/ga.log  
-}
-
-function randomShuffle {
-    touch x;
-    while read line
-    do  
-        elements[$length]=$line
-        length=$(($length + 1))
-    done
-    firstN=${1:-$length}
-    if [ $firstN -gt $length ]
-    then
-        firstN=$length
-    fi  
-    for ((i=0; $i < $firstN; i++))
-    do  
-        randPos=$(($RANDOM % ($length - $i) ))
-        echo "${elements[$randPos]}" >> x
-        elements[$randPos]=${elements[$length - $i - 1]} 
-    done
+# PHP
+# -------------------------------------------------------------------------
+function phperrors {
+  tail -100 /var/log/httpd/error_log
 }
 
 #check for php syntax errors
-function check 
+function check
 {
   if [ -z $1 ]; then
     echo 'Usage: check filename[.php]'
@@ -498,25 +501,62 @@ function check
       php -l $1php
     else
       echo "Cannot find the file $1"
-    fi  
-  fi  
+    fi
+  fi
 }
+# -------------------------------------------------------------------------
 
-#push current branch (or specified branch) to remote repo "origin"
-function gp {
-  local status branch
-  if [ -z $1 ]; then
-    status="$(git status 2>/dev/null)"
-    branch="$(echo "$status" | awk '/# On branch/ {print $4}')"
-    echo "pushing to origin/$branch"
-    git push origin $branch
+
+# APACHE HTTPD
+# -------------------------------------------------------------------------
+function addhttpauth {
+###
+# At long last ... a function to do this.
+###
+  echo 'Add basic HTTP authentication to a directory. Default values'
+  echo 'are shown in [brackets]. This function will create an htaccess'
+  echo 'file in a directory for the user/password combo you supply'
+###
+# get a little info
+###
+  read -p "Give the name of the directory [this dir]: " dirname
+  dirname=${dirname:-`pwd`}
+  read -p "User name to access $dirname: [my user]: " username
+  username=${username:=`whoami`}
+  htaccess=$dirname/.htaccess
+  htpasswd=/etc/www/$username/.htpasswd
+
+  read -p "Password for $username: " pass1
+  read -p "Repeat the password:    " pass2
+  if [ $pass1 != $pass2 ]; then
+    echo 'Try again. Those passwords did not match.'
   else
-    echo "pushing to origin/$1"
-    git push origin $1
-  fi  
+# let's go...
+    if [ ! -f $htaccess ]; then
+      touch $htaccess
+      mkdir -p /etc/www/$username
+      echo "AuthUserFile /etc/www/$username/.htpasswd" >> $htaccess
+      echo 'AuthName "This site is secured by password."' >> $htaccess
+      echo 'AuthType Basic' >> $htaccess
+    fi
+    echo "require valid-user" >> $htaccess
+
+    if [ ! -f /etc/www/$username/.htpasswd ]; then
+      mkdir -p /etc/www/$username
+      touch $htpasswd
+    fi
+    htpasswd -nmb $username $pass1 >> $htpasswd
+    chmod 644 $htaccess
+    chmod 644 $htpasswd
+    chown apache:apache $htpasswd
+    chown apache:apache $htaccess
+  fi
 }
+# -------------------------------------------------------------------------
 
 
+# MYSQL DATABASE
+# -------------------------------------------------------------------------
 function db {
   if [ -z $1 ]; then
     echo 'specify a database!'
@@ -524,7 +564,7 @@ function db {
     if [ -z $2 ]; then
       mysql $1
     elif [ -z $3 ]; then
-      mysql -vvv $1 < $2 
+      mysql -vvv $1 < $2
     else
       mysql -t -vvv $1 < $2 >> $3
     fi
@@ -532,9 +572,15 @@ function db {
 }
 
 function dumpme {
-  nice mysqldump -u sethbaxt -p $1 > $2.dump.sql
+  nice mysqldump $1 > $2.dump.sql
   echo 'Done. Now zipping.'
   nice gzip $2.dump.sql
   echo 'Done.'
   ls -l $2.dump.sql.gz
 }
+# -------------------------------------------------------------------------
+
+# MACHINE SPECIFIC
+# -------------------------------------------------------------------------
+
+# -------------------------------------------------------------------------
