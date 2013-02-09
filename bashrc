@@ -251,11 +251,32 @@ function closeport {
 function listenports {
   lsof | grep LISTEN
 }
+# -------------------------------------------------------------------------
+
+
+# NET
+# -------------------------------------------------------------------------
+#Copy files with SCP
+function sendfileto {
+  if [ -z $2 ]; then
+    echo 'Usage: sendfileto machine local-filename'
+    echo '  file will be copied to the ~root dir on the remote machine.'
+  else
+    scp -i ~/.ssh/obits.pem $2 root@$1:~/.
+  fi  
+}
 
 # listen for GA activity and print it to the screen
 function sniff {
   #tcpdump -ANi en0 'host www.google-analytics.com and port http'
   tcpdump -ANi en0 'host www.google-analytics.com and port http' > ga.log
+}
+
+function internalip {
+ ifconfig \
+    | grep -B1 "inet addr" \
+    | awk '{ if ( $1 == "inet" ) { print $2 } else if ( $2 == "Link" ) { printf "%s:" ,$1 } }' \
+    | awk -F: '{ print $1 ": " $3 }'; 
 }
 # -------------------------------------------------------------------------
 
@@ -284,10 +305,6 @@ function follow {
 
 function back {
   cd $OLDPWD
-}
-
-function lodev {
-  cd /Library/WebServer/Documents
 }
 
 function dir {
