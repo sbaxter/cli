@@ -82,6 +82,13 @@ alias mv='mv -i '
 
 alias ll="ls -l "
 alias vi="vim "
+
+#quick hop onto dev server 
+alias sandbox='ssh sandbox'
+alias sanbox='ssh sandbox'
+alias sandbx='ssh sandbox'
+alias sandobx='ssh sandbox'
+alias sadnbox='ssh sandbox'
 # -------------------------------------------------------------------------
 
 
@@ -130,6 +137,58 @@ function gu {
     echo "pulling from origin/$1"
     git pull origin $1
   fi
+}
+
+#strip trailing whitespace and expand tabs before staging
+function scrub {
+  local gitadd file
+  if ( ! getopts ":h:" opt ); then
+    gitadd=1
+    file=$1 
+  fi
+
+  OPTIND=1
+  while getopts ":h:" opt; do
+    case $opt in
+      h)
+        echo "$OPTARG will not be staged for commit." >&2
+        gitadd=0
+        file=$OPTARG
+        ;;
+      \?)
+        echo "Invalid option: -$OPTARG" >&2
+        echo "Usage: scrub [-h] {file}" >&2
+        return
+        ;;
+      :)
+        echo "Missing a target file!" >&2
+        echo "Usage: scrub [-h] {file}" >&2
+        return 
+        ;;
+    esac
+  done
+
+  if [ -z $file ]; then
+    echo "Usage: scrub [-h] {file}"
+    echo "    -h: disables git staging"
+    return
+  fi
+
+  echo "stripping trailing whitespaces from $file..."
+  sed -i '' -e's/[ \t]*$//' $file
+
+  echo "stripping tabs from $file..."
+  expand -t2 $file > $file.expanded
+  mv -f $file.expanded $file
+
+  if [ $gitadd -eq 1 ]; then
+    echo "staging $file..."
+    git add $file 
+  fi
+
+  echo "done"
+
+  return
 }
 # -------------------------------------------------------------------------
 

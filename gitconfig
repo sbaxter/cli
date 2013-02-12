@@ -1,6 +1,9 @@
 [user]
   name = Seth Baxter
   email = me@sethbaxter.com
+[core]
+  whitespace = trailing-space
+  autocrlf = input
 [alias]
   unstage = reset HEAD --
   last = log -1 HEAD
