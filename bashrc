@@ -60,7 +60,7 @@ function prompt_git() {
   echo "[$output]"
 }
 
-HOSTNAME="unknown"
+#HOSTNAME="unknown"
 function prompter {
   colwidth=$(tput cols)
   howfardown=$(echo `pwd` | sed 's/[^/]//g')
