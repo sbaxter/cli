@@ -96,7 +96,9 @@ alias sadnbox='ssh sandbox'
 # -------------------------------------------------------------------------
 
 #git completion
-source ~/.git-completion.bash
+if [ -f ~/.git-completion.bash ]; then
+  source ~/.git-completion.bash
+fi
 
 #aliases
 alias hist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
@@ -654,9 +656,4 @@ function dumpme {
   echo 'Done.'
   ls -l $2.dump.sql.gz
 }
-# -------------------------------------------------------------------------
-
-# MACHINE SPECIFIC
-# -------------------------------------------------------------------------
-
 # -------------------------------------------------------------------------
