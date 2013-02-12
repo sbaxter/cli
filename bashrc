@@ -60,6 +60,7 @@ function prompt_git() {
   echo "[$output]"
 }
 
+#put HOSTNAME in bash_profile
 #HOSTNAME="unknown"
 function prompter {
   colwidth=$(tput cols)
@@ -514,7 +515,8 @@ function symlink {
 # USEFUL FRONT-ENDY STUFF
 # -------------------------------------------------------------------------
 #minification
-export minifier=/Applications/Java/yuicompressor-2.4.7/build/yuicompressor-2.4.7.jar
+#put minifier in bash_profile
+#export minifier=/Applications/Java/yuicompressor-2.4.7/build/yuicompressor-2.4.7.jar
 
 #compile less and then minify ($1 = project name, $2 = if defined, skip the minification)
 function lm {
