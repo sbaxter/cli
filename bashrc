@@ -40,6 +40,7 @@ export LS_COLORS
          GRAY="\[\033[1;30m\]"
      NO_COLOR="\[\e[0m\]"
 
+# put $PROMPT_COLOR into bash_profile
 function prompt_git() {
   local status output flags
   status="$(git status 2>/dev/null)"
@@ -55,7 +56,7 @@ function prompt_git() {
       END {print r}'
   )"
   if [[ "$flags" ]]; then
-    output="$output$LIGHT_BLUE$flags$RED"
+    output="$output$LIGHT_BLUE$flags$PROMPT_COLOR"
   fi
   echo "[$output]"
 }
@@ -66,9 +67,9 @@ function prompter {
   colwidth=$(tput cols)
   howfardown=$(echo `pwd` | sed 's/[^/]//g')
   if [ $colwidth -lt 120 ]; then
-    PS1="$RED\n$(prompt_git)$RED[$HOSTNAME($USER):$howfardown\W]:\e[m "
+    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):$howfardown\W]:\e[m "
   else
-    PS1="$RED\n$(prompt_git)$RED[$HOSTNAME($USER):\w]:\e[m "
+    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):\w]:\e[m "
   fi
 }
 PROMPT_COMMAND="prompter"
