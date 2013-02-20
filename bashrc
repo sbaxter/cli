@@ -325,7 +325,8 @@ function sendfileto {
     echo 'Usage: sendfileto machine local-filename'
     echo '  file will be copied to the ~root dir on the remote machine.'
   else
-    scp -i ~/.ssh/obits.pem $2 root@$1:~/.
+    #put key in bash_profile
+    scp -i $key $2 root@$1:~/.
   fi  
 }
 
