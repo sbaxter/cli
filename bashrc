@@ -41,6 +41,10 @@ export LS_COLORS
      NO_COLOR="\[\e[0m\]"
 
 # put $PROMPT_COLOR into bash_profile
+if [ -z $PROMPT_COLOR ]; then
+  export PROMPT_COLOR=$RED
+fi
+
 function prompt_git() {
   local status output flags
   status="$(git status 2>/dev/null)"
@@ -61,8 +65,7 @@ function prompt_git() {
   echo "[$output]"
 }
 
-#put HOSTNAME in bash_profile
-#HOSTNAME="unknown"
+#redefine HOSTNAME in bash_profile
 function prompter {
   colwidth=$(tput cols)
   howfardown=$(echo `pwd` | sed 's/[^/]//g')
@@ -321,6 +324,11 @@ function listenports {
 # -------------------------------------------------------------------------
 #Copy files with SCP
 function sendfileto {
+  if [ -z $key ]; then
+    echo 'ERROR: no key is defined'
+    return
+  fi
+
   if [ -z $2 ]; then
     echo 'Usage: sendfileto machine local-filename'
     echo '  file will be copied to the ~root dir on the remote machine.'
@@ -530,6 +538,10 @@ function lm {
       echo "compiling ${file}"
       lessc less/$1.less > $1-style.css
       if [ -z $2 ]; then
+        if [ -z $minifier ]; then
+          echo "ERROR: minifier is not defined"
+          return
+        fi
         echo "minfying the css file"
         java -jar $minifier $1-style.css -o $1-style.min.css
         echo "done."
@@ -543,6 +555,10 @@ function lm {
 }
 
 function min {
+  if [ -z $minifier ]; then
+    echo "ERROR: minifier is not defined"
+    return
+  fi
   if [ -z $1 ]; then
     echo 'please specify a target: min {target} {target_extension}'
   else
