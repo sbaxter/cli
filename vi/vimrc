@@ -1,9 +1,32 @@
-syntax enable
+"Line Numbers - yes.
 set number
+
+"Tab stop = 2
 set ts=2
 set shiftwidth=2
+
+"No tabs.
 set expandtab
+
+"Highlight search terms.
 set hlsearch
+
+"Specify syntax files.
+syntax enable
 au BufNewFile,BufRead *.less set filetype=less
 au BufNewFile,BufRead *.json set filetype=json
 au BufNewFile,BufRead *.md set filetype=md
+
+"Highlight trailing whitespace.
+:highlight ExtraWhitespace ctermbg=cyan guibg=cyan
+:au InsertEnter * match ExtraWhitespace /\s\+\%#\@<!$/
+:au InsertLeave * match ExtraWhitespace /\s\+$/
+
+"Highlight tabs.
+:highlight StrayTabs ctermbg=cyan guibg=cyan
+:match StrayTabs /\t/
+
+"Clear match buffer. Check version for old AWS instances at work.
+if version >= 702
+  autocmd BufWinLeave * call clearmatches()
+endif
