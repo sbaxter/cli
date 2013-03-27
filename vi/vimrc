@@ -1,32 +1,44 @@
 "Line Numbers - yes.
-set number
+:set number
+"Specify syntax files.
+:syntax enable
+"Row/Column indicators.
+:set ruler
+"Highlight search terms.
+:set hlsearch
 
 "Tab stop = 2
-set ts=2
-set shiftwidth=2
-
+:set ts=2
+:set shiftwidth=2
 "No tabs.
-set expandtab
+:set expandtab
 
-"Highlight search terms.
-set hlsearch
 
-"Specify syntax files.
-syntax enable
-au BufNewFile,BufRead *.less set filetype=less
-au BufNewFile,BufRead *.json set filetype=json
-au BufNewFile,BufRead *.md set filetype=md
+"Begin autocommands
+"Check to see if we already have defined these
+:if !exists( "au_loaded" )
+:  let au_loaded = 1
 
-"Highlight trailing whitespace.
-:highlight ExtraWhitespace ctermbg=cyan guibg=cyan
-:au InsertEnter * match ExtraWhitespace /\s\+\%#\@<!$/
-:au InsertLeave * match ExtraWhitespace /\s\+$/
+"Special syntax files
+:  au BufNewFile,BufRead *.less   set filetype=less
+:  au BufNewFile,BufRead *.json   set filetype=json
+:  au BufNewFile,BufRead *.md     set filetype=md
 
-"Highlight tabs.
-:highlight StrayTabs ctermbg=cyan guibg=cyan
-:match StrayTabs /\t/
+"Highlight trailing whitespace, tabs, and long lines.
+:  hi Unwanted ctermbg=cyan guibg=cyan
+:  au InsertEnter * match Unwanted /\s\+\%#\@<!$/
+:  au BufRead,InsertLeave * match Unwanted /\s\+$\|\t\|\%>80v.\+/
+
+"Highlight the 80th column if available.
+:  if exists( '+colorcolumn' )
+:    hi colorcolumn ctermbg=Gray
+:    set colorcolumn=80
+:  endif
 
 "Clear match buffer. Check version for old AWS instances at work.
-if version >= 702
-  autocmd BufWinLeave * call clearmatches()
-endif
+:  if version >= 702
+:    au BufWinLeave * call clearmatches()
+:  endif
+
+"End autocommands
+:endif
