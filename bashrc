@@ -227,11 +227,11 @@ function dojob {
 }
 
 function start {
-  /etc/init.d/$1 star
+  /etc/init.d/$1 start
 }
 
 function restart {
-  /etc/init.d/$1 restar
+  /etc/init.d/$1 restart
 }
 
 function stop {
