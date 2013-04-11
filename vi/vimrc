@@ -20,9 +20,11 @@
 :  let au_loaded = 1
 
 "Special syntax files
-:  au BufNewFile,BufRead *.less   set filetype=less
-:  au BufNewFile,BufRead *.json   set filetype=json
-:  au BufNewFile,BufRead *.md     set filetype=md
+:  au BufNewFile,BufRead *.less     set filetype=less
+:  au BufNewFile,BufRead *.json     set filetype=json
+:  au BufNewFile,BufRead *.md       set filetype=md
+:  au BufNewFile,BufRead *.mst      set filetype=mustache
+:  au BufNewFile,BufRead *.mustache set filetype=mustache
 
 "Highlight trailing whitespace, tabs, and long lines.
 :  hi Unwanted ctermbg=cyan guibg=cyan
