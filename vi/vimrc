@@ -27,9 +27,8 @@
 :  au BufNewFile,BufRead *.mustache set filetype=mustache
 
 "Highlight trailing whitespace, tabs, and long lines.
-:  hi Unwanted ctermbg=cyan guibg=cyan
-:  au InsertEnter * match Unwanted /\s\+\%#\@<!$/
-:  au BufRead,InsertLeave * match Unwanted /\s\+$\|\t\|\%>80v.\+/
+:  hi unwanted ctermbg=cyan guibg=cyan
+:  au BufReadPost,InsertLeave * match unwanted /\s\+\%#\@<!$\|\t\|\%>80v.\+/
 
 "Highlight the 80th column if available.
 :  if exists( '+colorcolumn' )
