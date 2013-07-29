@@ -19,7 +19,7 @@ function title {
 }
 
 function setclock {
-  rdate -s 129.6.15.28
+  rdate -s time.nist.gov 
 }
 
 # Directory Colors
@@ -275,10 +275,6 @@ function downcase {
   sed -i 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' $1
 }
 
-function linecount {
-  cat "$1" | grep -c $
-}
-
 function unDOS {
   sed -i 's/.$//' $1
 }
@@ -412,7 +408,7 @@ function back {
   cd $OLDPWD
 }
 
-function dir {
+function ldir {
   ls -l | grep ^d
 }
 
@@ -463,6 +459,11 @@ function randomShuffle {
         elements[$randPos]=${elements[$length - $i - 1]}
     done
 }
+
+function linecount {
+  cat "$1" | grep -c $
+}
+
 # -------------------------------------------------------------------------
 
 
@@ -618,8 +619,7 @@ function phperrors {
 }
 
 #check for php syntax errors
-function check
-{
+function check {
   if [ -z $1 ]; then
     echo 'Usage: check filename[.php]'
     echo ' performs a syntax check of the file (appending ".php" as needed)'
@@ -638,7 +638,7 @@ function check
 # -------------------------------------------------------------------------
 
 
-# APACHE HTTPD
+# HTTPD
 # -------------------------------------------------------------------------
 function addhttpauth {
 ###
