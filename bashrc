@@ -413,7 +413,11 @@ function ldir {
 }
 
 function unspacefilenames {
-  for f in *; do mv "$f" `echo $f | tr ' ' '_'`; done
+  if [ -z "$1" ]; then
+    for f in *; do mv "$f" `echo $f | tr ' ' '_'`; done
+  else
+    mv "$1" `echo "$1" | tr ' ' '_'`
+  fi
 }
 
 function wipe {
