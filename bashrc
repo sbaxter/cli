@@ -468,6 +468,10 @@ function linecount {
   cat "$1" | grep -c $
 }
 
+function pb {
+#OSX only:
+  cat $1 | pbcopy
+}
 # -------------------------------------------------------------------------
 
 
