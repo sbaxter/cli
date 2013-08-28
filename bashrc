@@ -89,6 +89,8 @@ function prompter {
   else
     PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):\w]:\e[m "
   fi
+
+  PS2="   $PROMPT_COLOR->"
 }
 PROMPT_COMMAND="prompter"
 # -------------------------------------------------------------------------
