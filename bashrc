@@ -1,8 +1,3 @@
-# If not running interactively, don't do anything
-if [ -z "$PS1" ]; then
-  return
-fi
-
 # TERMINAL
 # -------------------------------------------------------------------------
 # Source global definitions
@@ -19,14 +14,14 @@ function title {
 }
 
 function setclock {
-  rdate -s time.nist.gov 
+  rdate -s 129.6.15.28
 }
 
-# Directory Colors
+#Directory Colors
 LS_COLORS='di=0;32'
 export LS_COLORS
 
-# Colors
+#Colors
           RED="\[\033[0;31m\]"
     LIGHT_RED="\[\033[1;31m\]"
        YELLOW="\[\033[0;33m\]"
@@ -44,16 +39,6 @@ export LS_COLORS
         BLACK="\[\033[0;30m\]"
          GRAY="\[\033[1;30m\]"
      NO_COLOR="\[\e[0m\]"
-
-# Background Colors
-     ON_BLACK="\033[40m"
-       ON_RED="\033[41m"
-     ON_GREEN="\033[42m"
-    ON_YELLOW="\033[43m"
-      ON_BLUE="\033[44m"
-    ON_PURPLE="\033[45m"
-      ON_CYAN="\033[46m"
-     ON_WHITE="\033[47m"
 
 # put $PROMPT_COLOR into bash_profile
 if [ -z $PROMPT_COLOR ]; then
@@ -82,15 +67,16 @@ function prompt_git() {
 
 #redefine HOSTNAME in bash_profile
 function prompter {
+  local length colwidth howfardown whitespace
   colwidth=$(tput cols)
   howfardown=$(echo `pwd` | sed 's/[^/]//g')
   if [ $colwidth -lt 120 ]; then
-    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):$howfardown\W]:\e[m "
+    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):$howfardown\W]:$NO_COLOR "
   else
-    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):\w]:\e[m "
+    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):\w]:$NO_COLOR "
   fi
 
-  PS2="   $PROMPT_COLOR->"
+  PS2="   $PROMPT_COLOR->$NO_COLOR "
 }
 PROMPT_COMMAND="prompter"
 # -------------------------------------------------------------------------
@@ -104,13 +90,8 @@ alias mv='mv -i '
 
 alias ll="ls -l "
 alias vi="vim "
-alias ..="cd .."
-alias ..2="cd ../.."
-alias ..3="cd ../../.."
-alias ..4="cd ../../../.."
-alias ..5="cd ../../../../.."
 
-#quick hop onto dev server
+#quick hop onto dev server 
 alias sandbox='ssh sandbox'
 alias sanbox='ssh sandbox'
 alias sandbx='ssh sandbox'
@@ -173,7 +154,7 @@ function scrub {
   local gitadd file
   if ( ! getopts ":h:" opt ); then
     gitadd=1
-    file=$1
+    file=$1 
   fi
 
   OPTIND=1
@@ -192,7 +173,7 @@ function scrub {
       :)
         echo "Missing a target file!" >&2
         echo "Usage: scrub [-h] {file}" >&2
-        return
+        return 
         ;;
     esac
   done
@@ -212,26 +193,13 @@ function scrub {
 
   if [ $gitadd -eq 1 ]; then
     echo "staging $file..."
-    git add $file
+    git add $file 
   fi
 
   echo "done"
 
   return
 }
-# -------------------------------------------------------------------------
-
-
-# GPG
-# -------------------------------------------------------------------------
-function encryptfilefor {
-  gpg -a --encrypt --recipient $1 < $2 > $2.gpg
-}
-
-function sign {
-  gpg -a --detach-sign "$1" 
-}
-
 # -------------------------------------------------------------------------
 
 
@@ -242,11 +210,11 @@ function dojob {
 }
 
 function start {
-  /etc/init.d/$1 start
+  /etc/init.d/$1 star
 }
 
 function restart {
-  /etc/init.d/$1 restart
+  /etc/init.d/$1 restar
 }
 
 function stop {
@@ -275,6 +243,10 @@ function upcase {
 
 function downcase {
   sed -i 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' $1
+}
+
+function linecount {
+  cat "$1" | grep -c $
 }
 
 function unDOS {
@@ -366,7 +338,7 @@ function sendfileto {
   else
     #put key in bash_profile
     scp -i $key $2 root@$1:~/.
-  fi
+  fi  
 }
 
 # listen for GA activity and print it to the screen
@@ -379,7 +351,7 @@ function internalip {
  ifconfig \
     | grep -B1 "inet addr" \
     | awk '{ if ( $1 == "inet" ) { print $2 } else if ( $2 == "Link" ) { printf "%s:" ,$1 } }' \
-    | awk -F: '{ print $1 ": " $3 }';
+    | awk -F: '{ print $1 ": " $3 }'; 
 }
 # -------------------------------------------------------------------------
 
@@ -410,7 +382,7 @@ function back {
   cd $OLDPWD
 }
 
-function ldir {
+function dir {
   ls -l | grep ^d
 }
 
@@ -464,10 +436,6 @@ function randomShuffle {
         echo "${elements[$randPos]}" >> x
         elements[$randPos]=${elements[$length - $i - 1]}
     done
-}
-
-function linecount {
-  cat "$1" | grep -c $
 }
 
 function pb {
@@ -629,7 +597,8 @@ function phperrors {
 }
 
 #check for php syntax errors
-function check {
+function check
+{
   if [ -z $1 ]; then
     echo 'Usage: check filename[.php]'
     echo ' performs a syntax check of the file (appending ".php" as needed)'
@@ -648,7 +617,7 @@ function check {
 # -------------------------------------------------------------------------
 
 
-# HTTPD
+# APACHE HTTPD
 # -------------------------------------------------------------------------
 function addhttpauth {
 ###
