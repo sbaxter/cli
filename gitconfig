@@ -4,6 +4,7 @@
 [core]
   whitespace = trailing-space
   autocrlf = input
+  excludesfile = ~/.gitconfig
 [alias]
   unstage = reset HEAD --
   last = log -1 HEAD
