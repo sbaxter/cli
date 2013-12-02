@@ -112,12 +112,27 @@ alias ..3="cd ../../.."
 alias ..4="cd ../../../.."
 alias ..5="cd ../../../../.."
 
-#quick hop onto dev server
+# -------------------------------------------------------------------------
+
+
+# SSH
+# -------------------------------------------------------------------------
+# quick hop onto dev server
 alias sandbox='ssh sandbox'
 alias sanbox='ssh sandbox'
 alias sandbx='ssh sandbox'
 alias sandobx='ssh sandbox'
 alias sadnbox='ssh sandbox'
+
+
+# copy a file to the dev server
+function tosandbox {
+  if [ -z $1 ]; then
+    echo 'give me a file to send'
+  else
+    scp $1 sandbox:~
+  fi
+}
 # -------------------------------------------------------------------------
 
 
@@ -494,6 +509,11 @@ function owner () {
 
 # FILE COMPRESSION
 # -------------------------------------------------------------------------
+# Specify gnutar (for MacOSX)
+if hash gnutar 2>/dev/null; then
+  alias tar='gnutar'
+fi
+
 function addtotar () {
   tar -rf $1 $2
 }
