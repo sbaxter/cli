@@ -163,6 +163,7 @@ function gp {
   if [ -z $1 ]; then
     status="$(git status 2>/dev/null)"
     branch="$(echo "$status" | awk '/# On branch/ {print $4}')"
+    [[ "$branch" ]] || branch="$(git branch | perl -ne '/^\* (.*)/ && print $1')"
     echo "pushing to origin/$branch"
     git push origin $branch
   else
@@ -177,6 +178,7 @@ function gu {
   if [ -z $1 ]; then
     status="$(git status 2>/dev/null)"
     branch="$(echo "$status" | awk '/# On branch/ {print $4}')"
+    [[ "$branch" ]] || branch="$(git branch | perl -ne '/^\* (.*)/ && print $1')"
     echo "pulling from origin/$branch"
     git pull origin $branch
   else
