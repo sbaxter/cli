@@ -10,6 +10,9 @@ if [ -f /etc/bashrc ]; then
   . /etc/bashrc
 fi
 
+# VI mode for editing the command line.
+set -o vi
+
 function reload {
   source ~/.bashrc
 }

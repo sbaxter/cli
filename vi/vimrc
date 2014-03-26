@@ -1,3 +1,6 @@
+:set t_Co=256
+:colorscheme peachpuff
+
 "Line Numbers - yes.
 :set number
 "Specify syntax files.
