@@ -35,7 +35,7 @@
 
 "Highlight the 80th column if available.
 :  if exists( '+colorcolumn' )
-:    hi colorcolumn ctermbg=Gray
+:    hi colorcolumn ctermbg=233
 :    set colorcolumn=80
 :  endif
 
