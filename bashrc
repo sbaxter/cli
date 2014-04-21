@@ -68,14 +68,14 @@ function prompt_git() {
   local status output flags
   status="$(git status 2>/dev/null)"
   [[ $? != 0 ]] && return;
-  output="$(echo "$status" | awk '/# Initial commit/ {print "(init)"}')"
-  [[ "$output" ]] || output="$(echo "$status" | awk '/# On branch/ {print $4}')"
+  output="$(echo "$status" | awk '/Initial commit/ {print "(init)"}')"
+  [[ "$output" ]] || output="$(echo "$status" | awk '/On branch/ {print $4}')"
   [[ "$output" ]] || output="$(git branch | perl -ne '/^\* (.*)/ && print $1')"
   flags="$(
     echo "$status" | awk 'BEGIN {r=""}
-      /^# Changes to be committed:$/        {r=r "+"}
-      /^# Changes not staged for commit:$/  {r=r "!"}
-      /^# Untracked files:$/                {r=r "?"}
+      /^Changes to be committed:$/        {r=r "+"}
+      /^Changes not staged for commit:$/  {r=r "!"}
+      /^Untracked files:$/                {r=r "?"}
       END {print r}'
   )"
   if [[ "$flags" ]]; then
@@ -109,6 +109,7 @@ alias mv='mv -i '
 
 alias ll="ls -l "
 alias vi="vim "
+alias grep="grep --color=auto"
 alias ..="cd .."
 alias ..2="cd ../.."
 alias ..3="cd ../../.."
@@ -276,7 +277,7 @@ function stop {
 }
 
 function isrunning {
-  ps -ef | grep $1 | grep -v grep
+  ps -ef | grep -i $1 | grep -v grep
 }
 
 function isinstalled {

@@ -16,3 +16,5 @@
   dump = cat-file -p
 [color]
   ui = true
+[color "diff"]
+	new = white

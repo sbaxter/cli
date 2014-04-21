@@ -1,6 +1,8 @@
 :set t_Co=256
 :colorscheme peachpuff
 
+:imap jj <Esc>
+
 "Line Numbers - yes.
 :set number
 "Specify syntax files.
