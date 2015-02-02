@@ -65,31 +65,50 @@ if [ -z $PROMPT_COLOR ]; then
 fi
 
 function prompt_git() {
-  local status output flags
+  local status output flags os
+  os=$(uname -s)
   status="$(git status 2>/dev/null)"
   [[ $? != 0 ]] && return;
-  output="$(echo "$status" | awk '/Initial commit/ {print "(init)"}')"
-  [[ "$output" ]] || output="$(echo "$status" | awk '/On branch/ {print $4}')"
+  [ "$os" = "Darwin" ] \
+    && output="$(echo "$status" | awk '/Initial commit/ {print "(init)"}')" \
+    || output="$(echo "$status" | awk '/# Initial commit/ {print "(init)"}')"
+
+  if [ "$os" = "Darwin" ]; then
+    [[ "$output" ]] || output="$(echo "$status" | awk '/On branch/ {print $4}')"
+  else
+    [[ "$output" ]] || output="$(echo "$status" | awk '/# On branch/ {print $4}')"
+  fi
   [[ "$output" ]] || output="$(git branch | perl -ne '/^\* (.*)/ && print $1')"
-  flags="$(
-    echo "$status" | awk 'BEGIN {r=""}
-      /^Changes to be committed:$/        {r=r "+"}
-      /^Changes not staged for commit:$/  {r=r "!"}
-      /^Untracked files:$/                {r=r "?"}
-      END {print r}'
-  )"
+  if [ "$os" = "Darwin" ]; then
+    flags="$(
+      echo "$status" | awk 'BEGIN {r=""}
+        /^Changes to be committed:$/        {r=r "+"}
+        /^Changes not staged for commit:$/  {r=r "!"}
+        /^Untracked files:$/                {r=r "?"}
+        END {print r}'
+    )"
+  else
+    flags="$(
+      echo "$status" | awk 'BEGIN {r=""}
+        /^# Changes to be committed:$/        {r=r "+"}
+        /^# Changes not staged for commit:$/  {r=r "!"}
+        /^# Untracked files:$/                {r=r "?"}
+        END {print r}'
+    )"
+  fi
   if [[ "$flags" ]]; then
     output="$output$LIGHT_BLUE$flags$PROMPT_COLOR"
   fi
   echo "[$output]"
 }
 
+
 #redefine HOSTNAME in bash_profile
 function prompter {
   local length colwidth howfardown whitespace
   colwidth=$(tput cols)
   howfardown=$(echo `pwd` | sed 's/[^/]//g')
-  if [ $colwidth -lt 120 ]; then
+  if [ $colwidth -lt 375 ]; then
     PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):$howfardown\W]:$NO_COLOR "
   else
     PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):\w]:$NO_COLOR "
@@ -153,9 +172,12 @@ alias hist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
 alias gst='git status '
 alias ga='git add '
 alias gb='git branch '
-alias gc='git commit'
+alias gc='git commit -S'
+alias gr='git pull --rebase'
 alias gd='git diff'
 alias go='git checkout '
+alias gpr='git merge --no-ff'
+alias grb="git for-each-ref --sort=-committerdate refs/remotes/ --format='%(refname:short)' --count=10"
 
 alias got='git '
 alias get='git '
@@ -496,6 +518,14 @@ function randomShuffle {
 function pb {
 #OSX only:
   cat $1 | pbcopy
+}
+
+function howbigis {
+  # Quickly nab a human readable file size
+  [ -z "$1" ] && echo "howbigis: no file specified" && return;
+  [ ! -f "$1" ] && echo "howbigis: $1 not found" && return;
+
+  ls -lah "$1" | awk '{print $5}'
 }
 # -------------------------------------------------------------------------
 
