@@ -1,6 +1,6 @@
 [user]
   name = Seth Baxter
-  email = me@sethbaxter.com
+  email = me+@sethbaxter.com
 [core]
   whitespace = trailing-space
   autocrlf = input
@@ -17,4 +17,4 @@
 [color]
   ui = true
 [color "diff"]
-	new = white
+  new = white
