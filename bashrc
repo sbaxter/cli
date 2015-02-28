@@ -107,7 +107,7 @@ function prompt_git() {
 function prompter {
   local length colwidth howfardown whitespace
   colwidth=$(tput cols)
-  howfardown=$(echo `pwd` | sed 's/[^/]//g')
+  howfardown=$(echo `pwd` | sed 's/[^/]//g' | sed 's/^\///')
   if [ $colwidth -lt 375 ]; then
     PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):$howfardown\W]:$NO_COLOR "
   else
