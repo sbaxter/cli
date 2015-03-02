@@ -778,3 +778,7 @@ function dumpme {
   ls -l $2.dump.sql.gz
 }
 # -------------------------------------------------------------------------
+
+function ranline {
+  head -$((${RANDOM} % `wc -l < $1` + 1)) $1 | tail -1
+}
