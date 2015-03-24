@@ -61,7 +61,7 @@ export LS_COLORS
 
 # put $PROMPT_COLOR into bash_profile
 if [ -z $PROMPT_COLOR ]; then
-  export PROMPT_COLOR=$RED
+  export PROMPT_COLOR=$LIGHT_GRAY
 fi
 
 function prompt_git() {
@@ -105,13 +105,13 @@ function prompt_git() {
 
 #redefine HOSTNAME in bash_profile
 function prompter {
-  local length colwidth howfardown whitespace
+  local length colwidth howfardown
   colwidth=$(tput cols)
   howfardown=$(echo `pwd` | sed 's/[^/]//g' | sed 's/^\///')
   if [ $colwidth -lt 375 ]; then
-    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):$howfardown\W]:$NO_COLOR "
+    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME:$howfardown\W]:$NO_COLOR "
   else
-    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME($USER):\w]:$NO_COLOR "
+    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME:\w]:$NO_COLOR "
   fi
 
   PS2="   $PROMPT_COLOR->$NO_COLOR "
@@ -128,6 +128,7 @@ alias mv='mv -i '
 
 alias ll="ls -l "
 alias vi="vim "
+alias e="emacs"
 alias grep="grep --color=auto"
 alias ..="cd .."
 alias ..2="cd ../.."
@@ -515,6 +516,10 @@ function randomShuffle {
     done
 }
 
+function ranline {
+  head -$((${RANDOM} % `wc -l < $1` + 1)) $1 | tail -1
+}
+
 function pb {
 #OSX only:
   cat $1 | pbcopy
@@ -623,89 +628,6 @@ function symlink {
 }
 # -------------------------------------------------------------------------
 
-
-# USEFUL FRONT-ENDY STUFF
-# -------------------------------------------------------------------------
-#minification
-#put minifier in bash_profile
-#export minifier=/Applications/Java/yuicompressor-2.4.7/build/yuicompressor-2.4.7.jar
-
-#compile less and then minify ($1 = project name, $2 = if defined, skip the minification)
-function lm {
-  if [ -z $1 ]; then
-    echo "please specify a target .less file: lm {project_name}"
-  else
-    file="less/$1.less"
-    if [ -f $file ]; then
-      echo "compiling ${file}"
-      lessc less/$1.less > $1-style.css
-      if [ -z $2 ]; then
-        if [ -z $minifier ]; then
-          echo "ERROR: minifier is not defined"
-          return
-        fi
-        echo "minfying the css file"
-        java -jar $minifier $1-style.css -o $1-style.min.css
-        echo "done."
-      else
-        echo "less compiled (skipping the minification)."
-      fi
-    else
-     echo "target file does not exist! (./less/$file)"
-    fi
-  fi
-}
-
-function min {
-  if [ -z $minifier ]; then
-    echo "ERROR: minifier is not defined"
-    return
-  fi
-  if [ -z $1 ]; then
-    echo 'please specify a target: min {target} {target_extension}'
-  else
-    if [ -z $2 ]; then
-      echo 'please specify a file type: min {target} {target_extension}'
-    else
-      if [ -f $1.$2 ]; then
-        echo "performing $2 minification"
-        java -jar $minifier $1.$2 -o $1.min.$2
-        echo "done."
-      else
-        echo "can't find ./$1.$2"
-      fi
-    fi
-  fi
-}
-# -------------------------------------------------------------------------
-
-
-# PHP
-# -------------------------------------------------------------------------
-function phperrors {
-  tail -100 /var/log/httpd/error_log
-}
-
-#check for php syntax errors
-function check {
-  if [ -z $1 ]; then
-    echo 'Usage: check filename[.php]'
-    echo ' performs a syntax check of the file (appending ".php" as needed)'
-  else
-    if [ -f $1 ]; then
-      php -l $1
-    elif [ -f $1.php ]; then
-      php -l $1.php
-    elif [ -f $1php ]; then
-      php -l $1php
-    else
-      echo "Cannot find the file $1"
-    fi
-  fi
-}
-# -------------------------------------------------------------------------
-
-
 # HTTPD
 # -------------------------------------------------------------------------
 function addhttpauth {
@@ -752,33 +674,3 @@ function addhttpauth {
   fi
 }
 # -------------------------------------------------------------------------
-
-
-# MYSQL DATABASE
-# -------------------------------------------------------------------------
-function db {
-  if [ -z $1 ]; then
-    echo 'specify a database!'
-  else
-    if [ -z $2 ]; then
-      mysql $1
-    elif [ -z $3 ]; then
-      mysql -vvv $1 < $2
-    else
-      mysql -t -vvv $1 < $2 >> $3
-    fi
-  fi
-}
-
-function dumpme {
-  nice mysqldump $1 > $2.dump.sql
-  echo 'Done. Now zipping.'
-  nice gzip $2.dump.sql
-  echo 'Done.'
-  ls -l $2.dump.sql.gz
-}
-# -------------------------------------------------------------------------
-
-function ranline {
-  head -$((${RANDOM} % `wc -l < $1` + 1)) $1 | tail -1
-}

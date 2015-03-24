@@ -18,3 +18,5 @@
   ui = true
 [color "diff"]
   new = white
+[github]
+  user = sbaxter
