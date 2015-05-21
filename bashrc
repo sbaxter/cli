@@ -524,6 +524,7 @@ function pb {
 #OSX only:
   cat $1 | pbcopy
 }
+alias pc="tr -d '\n' | pbcopy"
 
 function howbigis {
   # Quickly nab a human readable file size
