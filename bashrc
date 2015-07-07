@@ -3,13 +3,21 @@ if [ -z "$PS1" ]; then
   return
 fi
 
-# TERMINAL
-# -------------------------------------------------------------------------
 # Source global definitions
 if [ -f /etc/bashrc ]; then
   . /etc/bashrc
 fi
 
+# DEFAULTS (stick them in .bash_profile)
+# -------------------------------------------------------------------------
+: ${PROMPT_COLOR:=$LIGHT_GRAY}
+: ${REPO:=~/repos}
+: ${WWW_HOME:=https://google.com}
+# -------------------------------------------------------------------------
+
+
+# TERMINAL
+# -------------------------------------------------------------------------
 # VI mode for editing the command line.
 set -o vi
 
@@ -58,12 +66,6 @@ export LS_COLORS
       ON_CYAN="\033[46m"
      ON_WHITE="\033[47m"
 
-
-# put $PROMPT_COLOR into bash_profile
-if [ -z $PROMPT_COLOR ]; then
-  export PROMPT_COLOR=$LIGHT_GRAY
-fi
-
 function prompt_git() {
   local status output flags os
   os=$(uname -s)
@@ -97,21 +99,20 @@ function prompt_git() {
     )"
   fi
   if [[ "$flags" ]]; then
-    output="$output$LIGHT_BLUE$flags$PROMPT_COLOR"
+    output="$output$CYAN$flags$PROMPT_COLOR"
   fi
   echo "[$output]"
 }
 
 
-#redefine HOSTNAME in bash_profile
 function prompter {
   local length colwidth howfardown
   colwidth=$(tput cols)
   howfardown=$(echo `pwd` | sed 's/[^/]//g' | sed 's/^\///')
   if [ $colwidth -lt 375 ]; then
-    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME:$howfardown\W]:$NO_COLOR "
+    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME$AWS_ACCOUNT_TAG:$howfardown\W]:$NO_COLOR "
   else
-    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME:\w]:$NO_COLOR "
+    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME$AWS_ACCOUNT_TAG:\w]:$NO_COLOR "
   fi
 
   PS2="   $PROMPT_COLOR->$NO_COLOR "
@@ -128,7 +129,6 @@ alias mv='mv -i '
 
 alias ll="ls -l "
 alias vi="vim "
-alias e="emacs"
 alias grep="grep --color=auto"
 alias ..="cd .."
 alias ..2="cd ../.."
@@ -136,27 +136,7 @@ alias ..3="cd ../../.."
 alias ..4="cd ../../../.."
 alias ..5="cd ../../../../.."
 
-# -------------------------------------------------------------------------
-
-
-# SSH
-# -------------------------------------------------------------------------
-# quick hop onto dev server
-alias sandbox='ssh sandbox'
-alias sanbox='ssh sandbox'
-alias sandbx='ssh sandbox'
-alias sandobx='ssh sandbox'
-alias sadnbox='ssh sandbox'
-
-
-# copy a file to the dev server
-function tosandbox {
-  if [ -z $1 ]; then
-    echo 'give me a file to send'
-  else
-    scp $1 sandbox:~
-  fi
-}
+alias lynx="lynx -accept_all_cookies -vikeys"
 # -------------------------------------------------------------------------
 
 
@@ -213,59 +193,49 @@ function gu {
     git pull origin $1
   fi
 }
+# -------------------------------------------------------------------------
 
-#strip trailing whitespace and expand tabs before staging
-function scrub {
-  local gitadd file
-  if ( ! getopts ":h:" opt ); then
-    gitadd=1
-    file=$1
+
+# REPOS
+# -------------------------------------------------------------------------
+function repo {
+  cd $REPO/$1
+}
+
+# auto-complete for repo
+_repo_dir () {
+  local cur=${COMP_WORDS[COMP_CWORD]}
+  local prev=${COMP_WORDS[COMP_CWORD-1]}
+  if [ $COMP_CWORD -eq 1 ]; then
+      COMPREPLY=( $( compgen -W "$(cd "$REPO" && find . -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)" -- $cur ) )
+  elif [ $COMP_CWORD -eq 2 ]; then
+      COMPREPLY=( $( compgen -W "$(cd "$REPO/$prev" && find . -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)" -- $cur ) )
   fi
+  return 0
+}
+complete -F _repo_dir repo
 
-  OPTIND=1
-  while getopts ":h:" opt; do
-    case $opt in
-      h)
-        echo "$OPTARG will not be staged for commit." >&2
-        gitadd=0
-        file=$OPTARG
-        ;;
-      \?)
-        echo "Invalid option: -$OPTARG" >&2
-        echo "Usage: scrub [-h] {file}" >&2
-        return
-        ;;
-      :)
-        echo "Missing a target file!" >&2
-        echo "Usage: scrub [-h] {file}" >&2
-        return
-        ;;
-    esac
-  done
-
-  if [ -z $file ]; then
-    echo "Usage: scrub [-h] {file}"
-    echo "    -h: disables git staging"
-    return
-  fi
-
-  echo "stripping trailing whitespaces from $file..."
-  sed -i '' -e's/[ \t]*$//' $file
-
-  echo "stripping tabs from $file..."
-  expand -t2 $file > $file.expanded
-  mv -f $file.expanded $file
-
-  if [ $gitadd -eq 1 ]; then
-    echo "staging $file..."
-    git add $file
-  fi
-
-  echo "done"
-
-  return
+function gclone {
+  [ -z $1 ] && echo "give me a repo to clone" && return
+  cd $REPO
+  git clone git@github.com:$1
+  cd $(echo $1 | sed 's/^.*\///')
 }
 # -------------------------------------------------------------------------
+
+# EMACS
+# -------------------------------------------------------------------------
+function e {
+  [[ -z $1 || -d $1 ]] && echo "slow down!" && return 1
+
+  [[ ! -f $1 ]] && echo -n "create? (y/N) " && read c
+
+  [[ -n "$c" && "$c" = "y" ]] && touch $1
+
+  [[ -f $1 ]] && emacs $1 || return 1
+}
+# -------------------------------------------------------------------------
+
 
 
 # GPG
@@ -399,22 +369,6 @@ function listenports {
 
 # NET
 # -------------------------------------------------------------------------
-#Copy files with SCP
-function sendfileto {
-  if [ -z $key ]; then
-    echo 'ERROR: no key is defined'
-    return
-  fi
-
-  if [ -z $2 ]; then
-    echo 'Usage: sendfileto machine local-filename'
-    echo '  file will be copied to the ~root dir on the remote machine.'
-  else
-    #put key in bash_profile
-    scp -i $key $2 root@$1:~/.
-  fi
-}
-
 # listen for GA activity and print it to the screen
 function sniff {
   #tcpdump -ANi en0 'host www.google-analytics.com and port http'
