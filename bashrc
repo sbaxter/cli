@@ -8,13 +8,6 @@ if [ -f /etc/bashrc ]; then
   . /etc/bashrc
 fi
 
-# DEFAULTS (stick them in .bash_profile)
-# -------------------------------------------------------------------------
-: ${PROMPT_COLOR:=$LIGHT_GRAY}
-: ${REPO:=~/repos}
-: ${WWW_HOME:=https://google.com}
-# -------------------------------------------------------------------------
-
 
 # TERMINAL
 # -------------------------------------------------------------------------
@@ -65,6 +58,12 @@ export LS_COLORS
     ON_PURPLE="\033[45m"
       ON_CYAN="\033[46m"
      ON_WHITE="\033[47m"
+
+# DEFAULTS (stick them in .bash_profile)
+: ${PROMPT_COLOR:=$LIGHT_GRAY}
+: ${REPO:=~/repos}
+: ${WWW_HOME:=https://google.com}
+
 
 function prompt_git() {
   local status output flags os
