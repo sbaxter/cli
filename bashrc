@@ -71,7 +71,7 @@ function _gprompt {
   branch=$(git describe --contains --all HEAD)
   w=$(git diff --no-ext-diff --quiet --exit-code || echo "!")
   i=$(git diff-index --cached --quiet HEAD -- || echo "+")
-  u=$([ -z $(git ls-files --others --exclude-standard --error-unmatch --) >/dev/null 2>&1 ] || echo "?")
+  u=$([ -z $(git ls-files --others --exclude-standard) >/dev/null 2>&1 ] || echo "?")
 
   echo "[$branch$CYAN$w$i$u$PROMPT_COLOR]"
 }
