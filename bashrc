@@ -27,8 +27,7 @@ function setclock {
 }
 
 # Directory Colors
-LS_COLORS='di=0;32'
-export LS_COLORS
+export LS_COLORS='di=0;32'
 
 # Colors
           RED="\[\033[0;31m\]"
@@ -65,58 +64,24 @@ export LS_COLORS
 : ${WWW_HOME:=https://google.com}
 
 
-function prompt_git() {
-  local status output flags os
-  os=$(uname -s)
-  status="$(git status 2>/dev/null)"
-  [[ $? != 0 ]] && return;
-  [ "$os" = "Darwin" ] \
-    && output="$(echo "$status" | awk '/Initial commit/ {print "(init)"}')" \
-    || output="$(echo "$status" | awk '/# Initial commit/ {print "(init)"}')"
+function _gprompt {
+  local output branch w i u
+  git status >/dev/null 2>&1 || return;
 
-  if [ "$os" = "Darwin" ]; then
-    [[ "$output" ]] || output="$(echo "$status" | awk '/On branch/ {print $4}')"
-  else
-    [[ "$output" ]] || output="$(echo "$status" | awk '/# On branch/ {print $4}')"
-  fi
-  [[ "$output" ]] || output="$(git branch | perl -ne '/^\* (.*)/ && print $1')"
-  if [ "$os" = "Darwin" ]; then
-    flags="$(
-      echo "$status" | awk 'BEGIN {r=""}
-        /^Changes to be committed:$/        {r=r "+"}
-        /^Changes not staged for commit:$/  {r=r "!"}
-        /^Untracked files:$/                {r=r "?"}
-        END {print r}'
-    )"
-  else
-    flags="$(
-      echo "$status" | awk 'BEGIN {r=""}
-        /^# Changes to be committed:$/        {r=r "+"}
-        /^# Changes not staged for commit:$/  {r=r "!"}
-        /^# Untracked files:$/                {r=r "?"}
-        END {print r}'
-    )"
-  fi
-  if [[ "$flags" ]]; then
-    output="$output$CYAN$flags$PROMPT_COLOR"
-  fi
-  echo "[$output]"
+  branch=$(git describe --contains --all HEAD)
+  w=$(git diff --no-ext-diff --quiet --exit-code || echo "!")
+  i=$(git diff-index --cached --quiet HEAD -- || echo "+")
+  u=$([ -z $(git ls-files --others --exclude-standard --error-unmatch --) >/dev/null 2>&1 ] || echo "?")
+
+  echo "[$branch$CYAN$w$i$u$PROMPT_COLOR]"
 }
 
-
-function prompter {
-  local length colwidth howfardown
-  colwidth=$(tput cols)
-  howfardown=$(echo `pwd` | sed 's/[^/]//g' | sed 's/^\///')
-  if [ $colwidth -lt 375 ]; then
-    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME$AWS_ACCOUNT_TAG:$howfardown\W]:$NO_COLOR "
-  else
-    PS1="$PROMPT_COLOR\n$(prompt_git)$PROMPT_COLOR[$HOSTNAME$AWS_ACCOUNT_TAG:\w]:$NO_COLOR "
-  fi
-
+function _prompt {
+  local depth=$(echo `pwd` | sed 's/[^/]//g' | sed 's/^\///')
+  PS1="$PROMPT_COLOR\n$(_gprompt)$PROMPT_COLOR[$HOSTNAME$AWS_ACCOUNT_TAG:$depth\W]:$NO_COLOR "
   PS2="   $PROMPT_COLOR->$NO_COLOR "
 }
-PROMPT_COMMAND="prompter"
+PROMPT_COMMAND="_prompt"
 # -------------------------------------------------------------------------
 
 
@@ -222,6 +187,7 @@ function gclone {
 }
 # -------------------------------------------------------------------------
 
+
 # EMACS
 # -------------------------------------------------------------------------
 function e {
@@ -234,7 +200,6 @@ function e {
   [[ -f $1 ]] && emacs $1 || return 1
 }
 # -------------------------------------------------------------------------
-
 
 
 # GPG
@@ -581,6 +546,7 @@ function symlink {
   rmdir $1.bak
 }
 # -------------------------------------------------------------------------
+
 
 # HTTPD
 # -------------------------------------------------------------------------
