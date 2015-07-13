@@ -41,7 +41,7 @@ export LS_COLORS='di=0;32'
 
 # DEFAULTS (stick them in .bash_profile)
 # -------------------------------------------------------------------------
-: ${PROMPT_COLOR:=$LIGHT_GRAY}
+: ${PROMPT_COLOR:=$YELLOW}
 : ${REPO:=~/repos}
 : ${WWW_HOME:=https://google.com}
 : ${AWS_ACCOUNT_TAG:=}
