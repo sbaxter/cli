@@ -1,35 +1,11 @@
 # If not running interactively, don't do anything
-if [ -z "$PS1" ]; then
-  return
-fi
+[ -z "$PS1" ] && return
 
 # Source global definitions
-if [ -f /etc/bashrc ]; then
-  . /etc/bashrc
-fi
+test -f  && source /etc/bashrc
 
-
-# TERMINAL
+# COLORS
 # -------------------------------------------------------------------------
-# VI mode for editing the command line.
-set -o vi
-
-function reload {
-  source ~/.bashrc
-}
-
-function title {
-  echo -ne "\033]2;$1\007"
-}
-
-function setclock {
-  rdate -s time.nist.gov
-}
-
-# Directory Colors
-export LS_COLORS='di=0;32'
-
-# Colors
           RED="\[\033[0;31m\]"
     LIGHT_RED="\[\033[1;31m\]"
        YELLOW="\[\033[0;33m\]"
@@ -58,11 +34,48 @@ export LS_COLORS='di=0;32'
       ON_CYAN="\033[46m"
      ON_WHITE="\033[47m"
 
+# Directory Colors
+export LS_COLORS='di=0;32'
+# -------------------------------------------------------------------------
+
+
 # DEFAULTS (stick them in .bash_profile)
+# -------------------------------------------------------------------------
 : ${PROMPT_COLOR:=$LIGHT_GRAY}
 : ${REPO:=~/repos}
 : ${WWW_HOME:=https://google.com}
+: ${AWS_ACCOUNT_TAG:=}
+# -------------------------------------------------------------------------
 
+
+# TERMINAL
+# -------------------------------------------------------------------------
+# VI mode for editing the command line.
+set -o vi
+
+export VISUAL=vim
+export EDITOR=$VISUAL
+export GIT_EDITOR=vim
+
+# cmd history
+export HISTCONTROL=erasedups:ignoreboth
+export HISTFILESIZE=500000
+export HISTSIZE=100000
+export HISTIGNORE="&:[ ]*:exit"
+shopt -s histappend
+shopt -s cmdhist
+
+function reload {
+  source ~/.bashrc
+}
+
+function title {
+  echo -ne "\033]2;$1\007"
+}
+
+function setclock {
+  rdate -s time.nist.gov
+}
 
 function _gprompt {
   local output branch w i u
@@ -90,16 +103,15 @@ PROMPT_COMMAND="_prompt"
 alias rm='rm -i '
 alias cp='cp -i '
 alias mv='mv -i '
-
 alias ll="ls -l "
 alias vi="vim "
 alias grep="grep --color=auto"
+alias back="cd -"
 alias ..="cd .."
 alias ..2="cd ../.."
 alias ..3="cd ../../.."
 alias ..4="cd ../../../.."
 alias ..5="cd ../../../../.."
-
 alias lynx="lynx -accept_all_cookies -vikeys"
 # -------------------------------------------------------------------------
 
@@ -107,55 +119,38 @@ alias lynx="lynx -accept_all_cookies -vikeys"
 # GIT
 # -------------------------------------------------------------------------
 
-#git completion
-if [ -f ~/.git-completion.bash ]; then
-  source ~/.git-completion.bash
-fi
+# git completion
+test -f $HOME/.git-completion.bash && source $HOME/.git-completion.bash
 
-#aliases
+# aliases
 alias hist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
 alias gst='git status '
 alias ga='git add '
-alias gb='git branch '
 alias gc='git commit -S'
 alias gr='git pull --rebase'
 alias gd='git diff'
 alias go='git checkout '
+alias gpt='git push --tags'
 alias gpr='git merge --no-ff'
 alias grb="git for-each-ref --sort=-committerdate refs/remotes/ --format='%(refname:short)' --count=10"
-
-alias got='git '
-alias get='git '
 alias groot='cd $(git rev-parse --show-cdup) '
 
-#push current branch (or specified branch) to remote repo "origin"
 function gp {
-  local status branch
-  if [ -z $1 ]; then
-    status="$(git status 2>/dev/null)"
-    branch="$(echo "$status" | awk '/# On branch/ {print $4}')"
-    [[ "$branch" ]] || branch="$(git branch | perl -ne '/^\* (.*)/ && print $1')"
-    echo "pushing to origin/$branch"
-    git push origin $branch
-  else
-    echo "pushing to origin/$1"
-    git push origin $1
-  fi
+  local branch
+  git status >/dev/null 2>&1 || return;
+
+  branch=$(git describe --contains --all HEAD)
+  echo "pushing to origin/$branch"
+  git push origin $branch
 }
 
-#pull current branch (or specified branch) from remote repo "origin"
 function gu {
-  local status branch
-  if [ -z $1 ]; then
-    status="$(git status 2>/dev/null)"
-    branch="$(echo "$status" | awk '/# On branch/ {print $4}')"
-    [[ "$branch" ]] || branch="$(git branch | perl -ne '/^\* (.*)/ && print $1')"
-    echo "pulling from origin/$branch"
-    git pull origin $branch
-  else
-    echo "pulling from origin/$1"
-    git pull origin $1
-  fi
+  local branch
+  git status >/dev/null 2>&1 || return;
+
+  branch=$(git describe --contains --all HEAD)
+  echo "pulling from origin/$branch"
+  git pull origin $branch
 }
 # -------------------------------------------------------------------------
 
@@ -211,7 +206,6 @@ function encryptfilefor {
 function sign {
   gpg -a --detach-sign "$1"
 }
-
 # -------------------------------------------------------------------------
 
 
@@ -333,17 +327,15 @@ function listenports {
 
 # NET
 # -------------------------------------------------------------------------
-# listen for GA activity and print it to the screen
-function sniff {
-  #tcpdump -ANi en0 'host www.google-analytics.com and port http'
-  tcpdump -ANi en0 'host www.google-analytics.com and port http' > ga.log
-}
-
 function internalip {
  ifconfig \
     | grep -B1 "inet addr" \
     | awk '{ if ( $1 == "inet" ) { print $2 } else if ( $2 == "Link" ) { printf "%s:" ,$1 } }' \
     | awk -F: '{ print $1 ": " $3 }';
+}
+
+function externalip {
+  curl ifconfig.me
 }
 # -------------------------------------------------------------------------
 
@@ -356,22 +348,6 @@ function lookat {
 
 function findtextinfiles {
   find . -name "$1" | xargs grep -n "$2"
-}
-
-function save {
-  mv $1 $1.saved
-}
-
-function restore {
-  mv $1.saved $1
-}
-
-function follow {
-  cat $1; tail -F $1 &
-}
-
-function back {
-  cd $OLDPWD
 }
 
 function linecount {
@@ -390,52 +366,12 @@ function unspacefilenames {
   fi
 }
 
-function wipe {
-  rm -R -f $1
-}
-
 function clonedirsfrom {
   (cd $1; find -type d ! -name .) | xargs mkdir
 }
 
 function copythisdirto {
   cp -r -p -P -u * $1
-}
-
-function findtexti {
-  grep -n -i -R "$1" * | grep -v svn | grep -v "Binary file"
-}
-
-function findtext {
-  grep -n -R "$1" * | grep -v svn | grep -v "Binary file"
-}
-
-function findstr {
-  grep -i -n -R $1 * | grep -v ".svn" | less
-}
-
-function randomShuffle {
-    touch x;
-    while read line
-    do
-        elements[$length]=$line
-        length=$(($length + 1))
-    done
-    firstN=${1:-$length}
-    if [ $firstN -gt $length ]
-    then
-        firstN=$length
-    fi
-    for ((i=0; $i < $firstN; i++))
-    do
-        randPos=$(($RANDOM % ($length - $i) ))
-        echo "${elements[$randPos]}" >> x
-        elements[$randPos]=${elements[$length - $i - 1]}
-    done
-}
-
-function ranline {
-  head -$((${RANDOM} % `wc -l < $1` + 1)) $1 | tail -1
 }
 
 function pb {
@@ -477,28 +413,6 @@ fi
 function addtotar () {
   tar -rf $1 $2
 }
-
-function tardate {
-  DUMPDATE=`date +%F-%H-%M`;
-  tar -vcf ~/$1.$DUMPDATE.tar *
-}
-
-function taritup {
-  dirname `pwd` > x
-  tr x / -
-  tarballname=`cat x`
-  now=`date +%F`
-  tar -zcf ~/$tarball.$now.tar.gz *
-}
-
-function untar {
-  FT=$(file -b $1 | awk '{print $1}')
-    if [ "$FT" = "bzip2" ]; then
-      tar xvjf "$1"
-    elif [ "$FT" = "gzip" ]; then
-      tar xvzf "$1"
-    fi
-}
 # -------------------------------------------------------------------------
 
 
@@ -535,62 +449,6 @@ function reassign {
      # confirm by showing.
      ls -l $1
    fi
-  fi
-}
-
-function symlink {
-# $1 is the name of some directory to be replaced by a symlink.
-# $2 is the name of directory we want to symlink to, instead.
-  mv $1 $1.bak
-  ln -s $2 $1
-  rmdir $1.bak
-}
-# -------------------------------------------------------------------------
-
-
-# HTTPD
-# -------------------------------------------------------------------------
-function addhttpauth {
-###
-# At long last ... a function to do this.
-###
-  echo 'Add basic HTTP authentication to a directory. Default values'
-  echo 'are shown in [brackets]. This function will create an htaccess'
-  echo 'file in a directory for the user/password combo you supply'
-###
-# get a little info
-###
-  read -p "Give the name of the directory [this dir]: " dirname
-  dirname=${dirname:-`pwd`}
-  read -p "User name to access $dirname: [my user]: " username
-  username=${username:=`whoami`}
-  htaccess=$dirname/.htaccess
-  htpasswd=/etc/www/$username/.htpasswd
-
-  read -p "Password for $username: " pass1
-  read -p "Repeat the password:    " pass2
-  if [ $pass1 != $pass2 ]; then
-    echo 'Try again. Those passwords did not match.'
-  else
-# let's go...
-    if [ ! -f $htaccess ]; then
-      touch $htaccess
-      mkdir -p /etc/www/$username
-      echo "AuthUserFile /etc/www/$username/.htpasswd" >> $htaccess
-      echo 'AuthName "This site is secured by password."' >> $htaccess
-      echo 'AuthType Basic' >> $htaccess
-    fi
-    echo "require valid-user" >> $htaccess
-
-    if [ ! -f /etc/www/$username/.htpasswd ]; then
-      mkdir -p /etc/www/$username
-      touch $htpasswd
-    fi
-    htpasswd -nmb $username $pass1 >> $htpasswd
-    chmod 644 $htaccess
-    chmod 644 $htpasswd
-    chown apache:apache $htpasswd
-    chown apache:apache $htaccess
   fi
 }
 # -------------------------------------------------------------------------
