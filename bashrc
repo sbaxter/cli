@@ -77,11 +77,18 @@ function setclock {
   rdate -s time.nist.gov
 }
 
+function _gbranch {
+  local sym=$(git symbolic-ref HEAD 2>/dev/null)
+  [ -z $sym ] && sym=$(git describe --contains --all HEAD)
+  [ -z $sym ] && sym=$(git rev-parse --short HEAD)
+  echo ${sym##refs/heads/}
+}
+
 function _gprompt {
   local output branch w i u
   git status >/dev/null 2>&1 || return;
 
-  branch=$(git describe --contains --all HEAD)
+  branch=$(_gbranch)
   w=$(git diff --no-ext-diff --quiet --exit-code || echo "!")
   i=$(git diff-index --cached --quiet HEAD -- || echo "+")
   u=$([ -z $(git ls-files --others --exclude-standard) >/dev/null 2>&1 ] || echo "?")
@@ -139,7 +146,8 @@ function gp {
   local branch
   git status >/dev/null 2>&1 || return;
 
-  branch=$(git describe --contains --all HEAD)
+  branch=$(git symbolic-ref HEAD 2>/dev/null)
+  [ -z $branch ] && echo "Detached state?" && return 1
   echo "pushing to origin/$branch"
   git push origin $branch
 }
@@ -148,7 +156,8 @@ function gu {
   local branch
   git status >/dev/null 2>&1 || return;
 
-  branch=$(git describe --contains --all HEAD)
+  branch=$(git symbolic-ref HEAD 2>/dev/null)
+  [ -z $branch ] && echo "Detached state?" && return 1
   echo "pulling from origin/$branch"
   git pull origin $branch
 }
