@@ -56,7 +56,7 @@ set -o vi
 
 export VISUAL=vim
 export EDITOR=$VISUAL
-export GIT_EDITOR=vim
+export GIT_EDITOR=$VISUAL
 
 # cmd history
 export HISTCONTROL=erasedups:ignoreboth
@@ -67,7 +67,7 @@ shopt -s histappend
 shopt -s cmdhist
 
 function reload {
-  source ~/.bashrc
+  source $HOME/.bashrc
 }
 
 function title {
