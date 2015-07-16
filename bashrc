@@ -2,7 +2,8 @@
 [ -z "$PS1" ] && return
 
 # Source global definitions
-test -f  && source /etc/bashrc
+test -f /etc/bashrc  && source /etc/bashrc
+test -f $HOME/.bash_private && source $HOME/.bash_private
 
 # COLORS
 # -------------------------------------------------------------------------
