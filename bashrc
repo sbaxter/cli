@@ -356,6 +356,10 @@ function lookat {
   vim -R $1
 }
 
+function follow {
+  cat $1 && tail -f -n0 $1
+}
+
 function findtextinfiles {
   find . -name "$1" | xargs grep -n "$2"
 }
