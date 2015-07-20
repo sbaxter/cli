@@ -186,6 +186,10 @@ complete -F _repo_dir repo
 
 alias wip="cd $REPO/wip"
 
+function towip {
+  mv $1 $REPO/wip/.
+}
+
 function gclone {
   [ -z $1 ] && echo "give me a repo to clone" && return
   cd $REPO
