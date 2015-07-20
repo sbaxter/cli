@@ -3,7 +3,10 @@ pushd `dirname $0` > /dev/null
 b=$(pwd -P)
 popd > /dev/null
 
-rm $HOME/.git-completion.bash && ln -s $b/git-completion.bash $HOME/.git-completion.bash
-rm $HOME/.bashrc && ln -s $b/bashrc $HOME/.bashrc
-rm $HOME/.inputrc && ln -s $b/inputrc $HOME/.inputrc
-rm $HOME/.vimrc && ln -s $b/vi/vimrc $HOME/.vimrc
+{ rm $HOME/.git-completion.bash; ln -s $b/git-completion.bash $HOME/.git-completion.bash; }
+{ rm $HOME/.bashrc; ln -s $b/bashrc $HOME/.bashrc; }
+{ rm $HOME/.inputrc; ln -s $b/inputrc $HOME/.inputrc; }
+{ rm $HOME/.psqlrc; ln -s $b/psqlrc $HOME/.psqlrc; }
+{ rm $HOME/.vimrc; ln -s $b/vi/vimrc $HOME/.vimrc; }
+{ rm $HOME/.gitignore; ln -s $b/.gitignore $HOME/.gitignore; }
+{ rm $HOME/.hushlogin; ln -s $b/.hushlogin $HOME/.hushlogin; }
