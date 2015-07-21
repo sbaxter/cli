@@ -1,12 +1,39 @@
 #!/bin/bash
+
+function _usage {
+  cat << _USAGE_
+
+  `basename $0` [-hb]
+
+    -h         help (you are here)
+    -b <ext>   backup files with the given extension
+_USAGE_
+}
+
+bak=false
+while getopts hb: opt ; do
+  case $opt in
+    h) _usage && exit 0 ;;
+    b)  [ -n "$OPTARG" ] && bak="$OPTARG" ;;
+    ?|*)  _usage && exit 2;;
+    esac
+done
+shift $(($OPTIND-1))
+
 pushd `dirname $0` > /dev/null
 b=$(pwd -P)
 popd > /dev/null
 
-{ rm $HOME/.git-completion.bash; ln -s $b/git-completion.bash $HOME/.git-completion.bash; }
-{ rm $HOME/.bashrc; ln -s $b/bashrc $HOME/.bashrc; }
-{ rm $HOME/.inputrc; ln -s $b/inputrc $HOME/.inputrc; }
-{ rm $HOME/.psqlrc; ln -s $b/psqlrc $HOME/.psqlrc; }
-{ rm $HOME/.vimrc; ln -s $b/vi/vimrc $HOME/.vimrc; }
-{ rm $HOME/.hushlogin; ln -s $b/hushlogin $HOME/.hushlogin; }
-{ rm $HOME/.gitignore; ln -s $b/.gitignore $HOME/.gitignore; }
+if [ $bak != false ]; then
+  for f in .bashrc .inputrc .psqlrc .vimrc .gitignore; do
+    [ -f $HOME/$f ] && cp $HOME/$f $HOME/$f.$bak
+  done
+fi
+
+{ rm -f $HOME/.git-completion.bash; ln -s $b/git-completion.bash $HOME/.git-completion.bash; }
+{ rm -f $HOME/.bashrc; ln -s $b/bashrc $HOME/.bashrc; }
+{ rm -f $HOME/.inputrc; ln -s $b/inputrc $HOME/.inputrc; }
+{ rm -f $HOME/.psqlrc; ln -s $b/psqlrc $HOME/.psqlrc; }
+{ rm -f $HOME/.vimrc; ln -s $b/vi/vimrc $HOME/.vimrc; }
+{ rm -f $HOME/.hushlogin; ln -s $b/hushlogin $HOME/.hushlogin; }
+{ rm -f $HOME/.gitignore; ln -s $b/.gitignore $HOME/.gitignore; }
