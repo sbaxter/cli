@@ -89,9 +89,15 @@ function _gprompt {
   local output branch w i u
   git status >/dev/null 2>&1 || return;
 
-  branch=$(_gbranch)
+  if git log >/dev/null 2>&1; then
+    branch=$(_gbranch)
+    i=$(git diff-index --cached --quiet HEAD -- 2>/dev/null || echo "+")
+  else
+    branch='(init)'
+    i=$(git diff --cached --quiet --exit-code || echo "+")
+  fi
+
   w=$(git diff --no-ext-diff --quiet --exit-code || echo "!")
-  i=$(git diff-index --cached --quiet HEAD -- || echo "+")
   u=$([ -z $(git ls-files --others --exclude-standard) >/dev/null 2>&1 ] || echo "?")
 
   echo "[$branch$CYAN$w$i$u$PROMPT_COLOR]"
