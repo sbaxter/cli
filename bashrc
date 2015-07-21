@@ -24,8 +24,7 @@ test -f $HOME/.bash_private && source $HOME/.bash_private
         BLACK="\[\033[0;30m\]"
          GRAY="\[\033[1;30m\]"
      NO_COLOR="\[\e[0m\]"
-
-# Background Colors
+# Background
      ON_BLACK="\033[40m"
        ON_RED="\033[41m"
      ON_GREEN="\033[42m"
@@ -34,7 +33,6 @@ test -f $HOME/.bash_private && source $HOME/.bash_private
     ON_PURPLE="\033[45m"
       ON_CYAN="\033[46m"
      ON_WHITE="\033[47m"
-
 # Directory Colors
 export LS_COLORS='di=0;32'
 # -------------------------------------------------------------------------
@@ -51,9 +49,10 @@ export LS_COLORS='di=0;32'
 
 # TERMINAL
 # -------------------------------------------------------------------------
-# VI mode for editing the command line.
+# vi mode for editing the command line.
 set -o vi
 
+# vi as the default editor.
 export VISUAL=vim
 export EDITOR=$VISUAL
 export GIT_EDITOR=$VISUAL
@@ -77,7 +76,11 @@ function title {
 function setclock {
   rdate -s time.nist.gov
 }
+# -------------------------------------------------------------------------
 
+
+# PROMPT
+# -------------------------------------------------------------------------
 function _gbranch {
   local sym=$(git symbolic-ref HEAD 2>/dev/null)
   [ -z $sym ] && sym=$(git describe --contains --all HEAD)
@@ -237,25 +240,28 @@ function dojob {
   source ~/.jobs/$1
 }
 
-function start {
-  /etc/init.d/$1 start
-}
+if [ `uname -s` != 'Darwin' ]; then
+  function start {
+    /etc/init.d/$1 start
+  }
 
-function restart {
-  /etc/init.d/$1 restart
-}
+  function restart {
+    /etc/init.d/$1 restart
+  }
 
-function stop {
-  /etc/init.d/$1 stop
-}
+  function stop {
+    /etc/init.d/$1 stop
+  }
+
+  function isinstalled {
+    rpm -qa | grep -i $1
+  }
+fi
 
 function isrunning {
   ps -ef | grep -i $1 | grep -v grep
 }
 
-function isinstalled {
-  rpm -qa | grep -i $1
-}
 # -------------------------------------------------------------------------
 
 
@@ -325,21 +331,23 @@ function appendlines {
 
 # PORTS
 # -------------------------------------------------------------------------
-function specificcloseport {
-  iptables -D INPUT -p tcp -m state --state NEW -m tcp --dport $1 -s $2 -j ACCEPT
-}
+if [ `uname -s` != 'Darwin' ]; then
+  function specificcloseport {
+    iptables -D INPUT -p tcp -m state --state NEW -m tcp --dport $1 -s $2 -j ACCEPT
+  }
 
-function specificopenport {
-  iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport $1 -s $2 -j ACCEPT
-}
+  function specificopenport {
+    iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport $1 -s $2 -j ACCEPT
+  }
 
-function openport {
-  iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport $1 -j ACCEPT
-}
+  function openport {
+    iptables -I INPUT -p tcp -m state --state NEW -m tcp --dport $1 -j ACCEPT
+  }
 
-function closeport {
-  iptables -D INPUT -p tcp -m state --state NEW -m tcp --dport $1 -j ACCEPT
-}
+  function closeport {
+    iptables -D INPUT -p tcp -m state --state NEW -m tcp --dport $1 -j ACCEPT
+  }
+fi
 
 function listenports {
   lsof | grep LISTEN
@@ -400,19 +408,19 @@ function copythisdirto {
   cp -r -p -P -u * $1
 }
 
-function pb {
-#OSX only:
-  cat $1 | pbcopy
-}
-alias pc="tr -d '\n' | pbcopy"
-
 function howbigis {
-  # Quickly nab a human readable file size
-  [ -z "$1" ] && echo "howbigis: no file specified" && return;
-  [ ! -f "$1" ] && echo "howbigis: $1 not found" && return;
+  [ -z "$1" ] && echo "no file specified" && return;
+  [ ! -f "$1" ] && echo "$1 not found" && return;
 
   ls -lah "$1" | awk '{print $5}'
 }
+
+if [ `uname -s` = 'Darwin' ]; then
+  function pb {
+    cat $1 | pbcopy
+  }
+  alias pc="tr -d '\n' | pbcopy"
+fi
 # -------------------------------------------------------------------------
 
 
@@ -431,7 +439,6 @@ function owner () {
 
 # FILE COMPRESSION
 # -------------------------------------------------------------------------
-# Specify gnutar (for MacOSX)
 if hash gnutar 2>/dev/null; then
   alias tar='gnutar'
 fi
@@ -445,36 +452,12 @@ function addtotar () {
 # SYM LINK
 # -------------------------------------------------------------------------
 function reassign {
-  if [ -z $1 ]; then
-   read -p "Give the name of the link: " linkname
-  fi
-  if [ -z $2 ]; then
-   read -p "Give the name of the new target: " targe
-  fi
+  [ ! -L $1 ] && { echo "$1 is not a symbolic link."; return 1; }
+  [ ! -e $2 ] && { touch $2; echo "created empty file named $2"; }
+  [ ! -e $2 ] && { echo "unable to create $2"; return 1; }
 
-  # Make sure the thing we are removing is a sym link.
-  if [ ! -L $1 ]; then
-   echo "Sorry. $1 is not a symbolic link"
-
-  # attempt to create the file if it does not exist.
-  else
-   if [ ! -e $2 ]; then
-     touch $2
-     # mention the fact that we had to create it.
-     echo "Created empty file named $2"
-   fi
-
-   # make sure the target is present.
-   if [ ! -e $2 ]; then
-     echo "Unable to find or create $2."
-   else
-     # nuke the link
-     rm -f $1
-     # link
-     ln -s $2 $1
-     # confirm by showing.
-     ls -l $1
-   fi
-  fi
+  rm -f $1
+  ln -s $2 $1
+  ls -l $1
 }
 # -------------------------------------------------------------------------
