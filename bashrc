@@ -7,32 +7,33 @@ test -f $HOME/.bash_private && source $HOME/.bash_private
 
 # COLORS
 # -------------------------------------------------------------------------
-          RED="\[\033[0;31m\]"
-    LIGHT_RED="\[\033[1;31m\]"
-       YELLOW="\[\033[0;33m\]"
- LIGHT_YELLOW="\[\033[1;33m\]"
-         BLUE="\[\033[0;34m\]"
-   LIGHT_BLUE="\[\033[1;34m\]"
-        GREEN="\[\033[0;32m\]"
-  LIGHT_GREEN="\[\033[1;32m\]"
-         CYAN="\[\033[0;36m\]"
-   LIGHT_CYAN="\[\033[1;36m\]"
-       PURPLE="\[\033[0;35m\]"
- LIGHT_PURPLE="\[\033[1;35m\]"
-        WHITE="\[\033[1;37m\]"
-   LIGHT_GRAY="\[\033[0;37m\]"
-        BLACK="\[\033[0;30m\]"
-         GRAY="\[\033[1;30m\]"
-     NO_COLOR="\[\e[0m\]"
-# Background
-     ON_BLACK="\033[40m"
-       ON_RED="\033[41m"
-     ON_GREEN="\033[42m"
-    ON_YELLOW="\033[43m"
-      ON_BLUE="\033[44m"
-    ON_PURPLE="\033[45m"
-      ON_CYAN="\033[46m"
-     ON_WHITE="\033[47m"
+    NO_COLOR=$(tput sgr0)
+        BOLD=$(tput bold)
+       BLACK=$(tput setaf 0)
+         RED=$(tput setaf 1)
+       GREEN=$(tput setaf 2)
+      YELLOW=$(tput setaf 3)
+        BLUE=$(tput setaf 4)
+     MAGENTA=$(tput setaf 5)
+        CYAN=$(tput setaf 6)
+       WHITE=$(tput setaf 7)
+       B_RED=$BOLD$RED
+      B_BLUE=$BOLD$BLUE
+   B_MAGENTA=$BOLD$MAGENTA
+      B_CYAN=$BOLD$CYAN
+     B_WHITE=$BOLD$WHITE
+     B_GREEN=$BOLD$GREEN
+    B_YELLOW=$BOLD$YELLOW
+     B_BLACK=$BOLD$BLACK
+    ON_BLACK=$(tput setab 0)
+      ON_RED=$(tput setab 1)
+    ON_GREEN=$(tput setab 2)
+   ON_YELLOW=$(tput setab 3)
+     ON_BLUE=$(tput setab 4)
+  ON_MAGENTA=$(tput setab 5)
+     ON_CYAN=$(tput setab 6)
+    ON_WHITE=$(tput setab 7)
+
 # Directory Colors
 export LS_COLORS='di=0;32'
 # -------------------------------------------------------------------------
@@ -108,7 +109,7 @@ function _gprompt {
 
 function _prompt {
   local depth=$(echo `pwd` | sed 's/[^/]//g' | sed 's/^\///')
-  PS1="$PROMPT_COLOR\n$(_gprompt)$PROMPT_COLOR[$HOSTNAME$AWS_ACCOUNT_TAG:$depth\W]:$NO_COLOR "
+  PS1="$PROMPT_COLOR\n$(_gprompt)$PROMPT_COLOR[$HOSTNAME$AWS_ACCOUNT_TAG:$depth\W]:$ON_BLACK$NO_COLOR "
   PS2="   $PROMPT_COLOR->$NO_COLOR "
 }
 PROMPT_COMMAND="_prompt"
