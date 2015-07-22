@@ -109,7 +109,7 @@ function _gprompt {
 
 function _prompt {
   local depth=$(echo `pwd` | sed 's/[^/]//g' | sed 's/^\///')
-  PS1="$PROMPT_COLOR\n$(_gprompt)$PROMPT_COLOR[$HOSTNAME$AWS_ACCOUNT_TAG:$depth\W]:$ON_BLACK$NO_COLOR "
+  PS1="$NO_COLOR$PROMPT_COLOR\n$(_gprompt)$PROMPT_COLOR[$HOSTNAME$AWS_ACCOUNT_TAG:$depth\W]:$ON_BLACK$NO_COLOR "
   PS2="   $PROMPT_COLOR->$NO_COLOR "
 }
 PROMPT_COMMAND="_prompt"
