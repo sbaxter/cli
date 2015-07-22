@@ -235,12 +235,8 @@ function sign {
 # -------------------------------------------------------------------------
 
 
-# PROCESS MGMT
+# PROCESS/PKG MGMT
 # -------------------------------------------------------------------------
-function dojob {
-  source ~/.jobs/$1
-}
-
 if [ `uname -s` != 'Darwin' ]; then
   function start {
     /etc/init.d/$1 start
