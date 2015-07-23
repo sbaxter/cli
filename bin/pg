@@ -1,0 +1,4 @@
+#!/bin/bash
+type psql >/dev/null 2>&1 || { echo "$0: psql not installed" >&2; exit 1; }
+
+psql -h 127.0.0.1 -p 5432 --set PROMPT1='local.%/=> ' --set PROMPT2='local.%/--> ' "$@"

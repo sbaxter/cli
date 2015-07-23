@@ -1,0 +1,10 @@
+#!/bin/bash
+
+{ ipconfig getpacket en0 > /dev/null \
+    || ipconfig getpacket en1 > /dev/null \
+    || ipconfig getpacket en2 > /dev/null \
+    || ipconfig getpacket en3 > /dev/null \
+    || ipconfig getpacket en4 > /dev/null \
+    || ipconfig getpacket en5 > /dev/null; } \
+  && { echo "connected"; exit 0; } \
+  || { echo "not connected"; exit 1; }

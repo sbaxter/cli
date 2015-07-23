@@ -1,0 +1,16 @@
+#!/bin/bash
+
+[ `uname -s` = Darwin ] && dcmd=gdate || dcmd=date
+type $dcmd >/dev/null 2>&1 || { echo "FATAL: GNU Date not installed" >&2; exit 1; }
+
+logfile="$HOME/.logs/last_$1_run.log"
+d=`$dcmd +%s`
+y=`$dcmd --date="1 day ago" +%s`
+
+function x {
+  [ ! -e $logfile ] && { mkdir -p $HOME/.logs; touch $logfile; echo $y > $logfile; }
+
+  [ `cat $logfile` -le $y ] && { echo $d > $logfile; $@; exit; } || exit 1
+}
+
+type $1 > /dev/null 2>&1 && x $@ || { echo "$1 is not available." >&2; exit 1; }

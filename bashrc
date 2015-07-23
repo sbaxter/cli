@@ -58,6 +58,9 @@ export VISUAL=vim
 export EDITOR=$VISUAL
 export GIT_EDITOR=$VISUAL
 
+# Add bin files to $PATH
+export PATH=$PATH:$(dirname $(readlink ${BASH_SOURCE[0]}))/bin
+
 # cmd history
 export HISTCONTROL=erasedups:ignoreboth
 export HISTFILESIZE=500000

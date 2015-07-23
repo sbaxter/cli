@@ -1,0 +1,43 @@
+#!/bin/bash
+
+function _usage {
+  cat << _USAGE_
+  `basename $0` [hdes] - repeate a command over and over and over and over...
+
+    -h           you are here.
+    -d           print a divider between iteration outputs
+    -e           exit on error
+    -s <seconds> number of seconds between iterations.
+_USAGE_
+}
+
+divider=false
+exit_on_error=false
+seconds=5
+while getopts hdes: opt ; do
+  case $opt in
+    h) _usage; exit ;;
+    d) divider=true ;;
+    e) exit_on_error=true ;;
+    s) [ -n "$OPTARG" ] && seconds="$OPTARG" || exit 1 ;;
+    ?|*)  exit 2;;
+    esac
+done
+
+shift $(($OPTIND-1))
+
+[[ -z "$@" ]] && { echo "supply a command to loop" >&2; exit 1; }
+
+echo "looping { $@; } every $seconds seconds; CTRL+C to quit."
+
+while :
+do
+  { $@; }
+  code=$?
+
+  $exit_on_error && { [ $code = 0 ] || break; }
+
+  sleep $seconds
+
+  $divider && echo "-----"
+done

@@ -1,0 +1,43 @@
+#!/bin/bash
+
+###
+# At long last ... a function to do this.
+###
+  echo 'Add basic HTTP authentication to a directory. Default values'
+  echo 'are shown in [brackets]. This function will create an htaccess'
+  echo 'file in a directory for the user/password combo you supply'
+###
+# get a little info
+###
+  read -p "Give the name of the directory [this dir]: " dirname
+  dirname=${dirname:-`pwd`}
+  read -p "User name to access $dirname: [my user]: " username
+  username=${username:=`whoami`}
+  htaccess=$dirname/.htaccess
+  htpasswd=/etc/www/$username/.htpasswd
+
+  read -p "Password for $username: " pass1
+  read -p "Repeat the password:    " pass2
+  if [ $pass1 != $pass2 ]; then
+    echo 'Try again. Those passwords did not match.'
+  else
+# let's go...
+    if [ ! -f $htaccess ]; then
+      touch $htaccess
+      mkdir -p /etc/www/$username
+      echo "AuthUserFile /etc/www/$username/.htpasswd" >> $htaccess
+      echo 'AuthName "This site is secured by password."' >> $htaccess
+      echo 'AuthType Basic' >> $htaccess
+    fi
+    echo "require valid-user" >> $htaccess
+
+    if [ ! -f /etc/www/$username/.htpasswd ]; then
+      mkdir -p /etc/www/$username
+      touch $htpasswd
+    fi
+    htpasswd -nmb $username $pass1 >> $htpasswd
+    chmod 644 $htaccess
+    chmod 644 $htpasswd
+    chown apache:apache $htpasswd
+    chown apache:apache $htaccess
+  fi
