@@ -145,15 +145,16 @@ test -f $HOME/.git-completion.bash && source $HOME/.git-completion.bash
 
 # aliases
 alias hist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
-alias gst='git status '
-alias ga='git add '
+alias gst='git status'
+alias ga='git add'
 alias gc='git commit -S'
-alias gr='git pull --rebase'
 alias gd='git diff'
-alias go='git checkout '
+alias go='git checkout'
+alias gpr='git merge --no-ff -S'
 alias gpt='git push --tags'
-alias gpr='git merge --no-ff'
+alias gr='git pull --rebase'
 alias grb="git for-each-ref --sort=-committerdate refs/remotes/ --format='%(refname:short)' --count=10"
+alias grm='git rm'
 alias groot='cd $(git rev-parse --show-cdup) '
 
 function gp {
