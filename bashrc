@@ -156,6 +156,7 @@ alias gr='git pull --rebase'
 alias grb="git for-each-ref --sort=-committerdate refs/remotes/ --format='%(refname:short)' --count=10"
 alias grm='git rm'
 alias groot='cd $(git rev-parse --show-cdup) '
+alias gt='git tag -sam'
 
 function gp {
   local branch
