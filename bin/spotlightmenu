@@ -1,0 +1,17 @@
+#!/bin/bash
+
+[ `uname -s` != 'Darwin' ] && { echo "MacOSX only!" >&2; exit 1; }
+
+if [ -z $1 ]; then
+  echo 'usage: spotlightmenu [enable|disable]'
+elif [ "$1"="disable" ]; then
+  sudo rm -rf /System/Library/CoreServices/Search.bundle.bak
+  sudo mv /System/Library/CoreServices/Search.bundle /System/Library/CoreServices/Search.bundle.bak
+  killall SystemUIServer
+elif [ "$1"="enable" ]; then
+  sudo mv /System/Library/CoreServices/Search.bundle.bak /System/Library/CoreServices/Search.bundle
+  killall SystemUIServer
+else
+  echo 'unknown command. usage:'
+  echo '  spotlightmenu [enable|disable]'
+fi
