@@ -4,17 +4,18 @@
 type $dcmd >/dev/null 2>&1 || { echo "FATAL: GNU Date not installed" >&2; exit 1; }
 
 fmt=%s
+qual=day
 while getopts f opt ; do
   case $opt in
-    f) fmt=%d%m%Y ;;
-    ?|*)  exit 2   ;;
+    f) fmt=%d%m%Y; qual=hour ;;
+    ?|*) exit 2 ;;
     esac
 done
 shift $(($OPTIND-1))
 
 logfile="$HOME/.logs/last_$1_run.log"
 d=`$dcmd +$fmt`
-y=`$dcmd --date="1 day ago" +$fmt`
+y=`$dcmd --date="1 $qual ago" +$fmt`
 
 function x {
   [ ! -e $logfile ] && { mkdir -p $HOME/.logs; touch $logfile; echo $y > $logfile; $@; exit; }
