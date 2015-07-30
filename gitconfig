@@ -5,6 +5,8 @@
   whitespace = trailing-space
   autocrlf = input
   excludesfile = ~/.gitignore
+[commit]
+  gpgSign = true
 [alias]
   unstage = reset HEAD --
   last = log -1 HEAD
