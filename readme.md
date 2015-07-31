@@ -19,6 +19,29 @@ I have hacked my own prompt, but it is probably smarter to use the prompt in git
 I use vi key bindings where possible: the bashrc file will `set -o vi` for editing the command line and the `inputrc` file will activate vi mode for other readline prompts (e.g. psql).
 
 ## Bin Files
+
+### [`update`](./bin/update)
+A script I use to update key repos regularly. To use, just set the `$UPDATE_LIST` environment variable to contain a list of repos to update.
+
+Example:
+```
+  $: export UPDATE_LIST="$HOME/repos/cli $HOME/.emacs.d"
+  $: update
+  Updating /home/sbaxter/repos/cli
+  UNABLE TO UPDATE (DIRTY)
+  Updating /home/sbaxter/.emacs.d
+```
+
+### [`daily`](./bin/daily)
+Execute a script on login, but no more than once per day. The `-f` option flag will execute only on the first login of the day.
+Example from my `.bash_profile`:
+```
+  daily -f diskusage
+  daily -f update > /dev/null && echo
+  daily -f brew update && echo && brew outdated && echo
+```
+
+### AWS scripts
 TODO
 
 ## Credits
