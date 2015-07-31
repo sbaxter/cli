@@ -39,6 +39,7 @@ Example from my `.bash_profile`:
   daily -f diskusage
   daily -f update > /dev/null && echo
   daily -f brew update && echo && brew outdated && echo
+  daily backup
 ```
 
 ### AWS scripts
