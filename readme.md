@@ -1,5 +1,5 @@
-#shb_dots
-My base config.
+#cli
+My base cli setup.
 
 ## Installation
 Setup symlinks to config files in this repo:
@@ -17,6 +17,9 @@ I have hacked my own prompt, but it is probably smarter to use the prompt in git
 
 ### VI Mode
 I use vi key bindings where possible: the bashrc file will `set -o vi` for editing the command line and the `inputrc` file will activate vi mode for other readline prompts (e.g. psql).
+
+## Bin Files
+TODO
 
 ## Credits
 * [georgeflanagin](https://github.com/georgeflanagin): my cli sensei
