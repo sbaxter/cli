@@ -19,6 +19,7 @@ I have hacked my own prompt, but it is probably smarter to use the prompt in git
 I use vi key bindings where possible: the bashrc file will `set -o vi` for editing the command line and the `inputrc` file will activate vi mode for other readline prompts (e.g. psql).
 
 ## bin
+Bin files are automatically added to the path if you're using the [`.bashrc` file](./bashrc#L61-L63) in this repo.
 
 ### [`update`](./bin/update)
 A script I use to update key repos regularly. To use, just set the `$UPDATE_LIST` environment variable to contain a list of repos to update.
