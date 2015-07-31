@@ -8,8 +8,9 @@ s3path=s3://$S3_BACKUP_BUCKET/backups/$HOSTNAME
 staging=$HOME/.backup
 mkdir -p $staging/.ssh
 
-for f in $BACKUP_LIST; do
-  [ -e $staging/$f ] || ln -s $HOME/$f $staging/$f
+for x in $BACKUP_LIST; do
+  f=$(basename $x)
+  [ -e $staging/$f ] || ln -s $x $staging/$f
 done
 
 [ -e $staging/.ssh/config ] || ln -s $HOME/.ssh/config $staging/.ssh/config

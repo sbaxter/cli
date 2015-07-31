@@ -18,7 +18,7 @@ I have hacked my own prompt, but it is probably smarter to use the prompt in git
 ### VI Mode
 I use vi key bindings where possible: the bashrc file will `set -o vi` for editing the command line and the `inputrc` file will activate vi mode for other readline prompts (e.g. psql).
 
-## Bin Files
+## bin
 
 ### [`update`](./bin/update)
 A script I use to update key repos regularly. To use, just set the `$UPDATE_LIST` environment variable to contain a list of repos to update.
@@ -41,6 +41,20 @@ Example from my `.bash_profile`:
   daily -f brew update && echo && brew outdated && echo
   daily backup
 ```
+
+### [`backup`](./bin/backup)
+A script I use to backup key files to AWS s3. To use, just set the `$BACKUP_LIST` environment variable to contain a list of files and directories to backup.
+
+Example on Mac OSX:
+```
+  [Ptolemy:/~]: export BACKUP_LIST="$HOME/.bash_profile"
+  [Ptolemy:/~]: backup
+  upload: .backup/.bash_profile to s3://my-backups/Ptolemy/.bash_profile
+  upload: .backup/latest.txt to s3://my-backups/Ptolemy/latest.txt
+  upload: .backup/brewlist.txt to s3://my-backups/Ptolemy/brewlist.txt
+```
+
+*Note: `$HOME/ssh/config` is automatically backed up by this script; a list of brew packages is also stored on Mac OSX.*
 
 ### AWS scripts
 TODO
