@@ -59,7 +59,8 @@ export EDITOR=$VISUAL
 export GIT_EDITOR=$VISUAL
 
 # Add bin files to $PATH
-export PATH=$PATH:$(dirname $(readlink ${BASH_SOURCE[0]}))/bin
+_bashsrc=$(readlink ${BASH_SOURCE[0]})
+[ -h $_bashrc ] && export PATH=$PATH:$(dirname $_bashsrc)/bin
 
 # cmd history
 export HISTCONTROL=erasedups:ignoreboth
