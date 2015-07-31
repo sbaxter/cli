@@ -21,7 +21,7 @@ while getopts hdes: opt ; do
     e) exit_on_error=true ;;
     s) [ -n "$OPTARG" ] && seconds="$OPTARG" || exit 1 ;;
     ?|*)  exit 2;;
-    esac
+  esac
 done
 
 shift $(($OPTIND-1))

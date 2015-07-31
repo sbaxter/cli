@@ -1,0 +1,69 @@
+#!/bin/bash
+
+type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
+
+opts=hf:glo:p:tvD
+delete=false
+fmt=text
+listing=false
+get=false
+valid=false
+bq="Stacks[*]"
+q="$bq.[StackName,StackStatus]"
+
+function _usage {
+  cat << _USAGE_
+  `basename $0`: abbreviate common AWS cloudformation operations
+
+  Usage:
+    `basename $0` [-$opts] <stack | template-file>
+
+  Options:
+    -h             help (you are here)
+    -f <format>    specify output format
+    -g             display the stack's cloudformation template
+    -l             list stacks using prefix search
+    -o <output>    display stack output value
+    -p <parameter> display stack parameter value
+    -t <file>      validate a cloudformation template file
+    -v             verbose stack info (in default format)
+    -D             delete stack
+_USAGE_
+}
+
+function liststacks {
+  if [ -z $1 ]; then
+    aws cloudformation describe-stacks --query="Stacks[*].[StackName]" --output text | sort
+  else
+    aws cloudformation describe-stacks --query="Stacks[*].[StackName]" --output text | grep $1
+  fi
+}
+
+while getopts $opts opt; do
+  case $opt in
+    h) _usage; exit                           ;;
+    f) [ -n "$OPTARG" ] && fmt="$OPTARG"      ;;
+    g) get=true                               ;;
+    l) listing=true                           ;;
+    o) [ -n "$OPTARG" ] && q="$bq.Outputs[?OutputKey==\`$OPTARG\`].OutputValue[]"          ;;
+    p) [ -n "$OPTARG" ] && q="$bq.Parameters[?ParameterKey==\`$OPTARG\`].ParameterValue[]" ;;
+    t) valid=true                             ;;
+    v) q=$bq; fmt=$(aws configure get output) ;;
+    D) delete=true                            ;;
+    ?|*) echo; _usage; exit 2                 ;;
+  esac
+done
+
+shift $(($OPTIND-1))
+
+$listing && { liststacks $1;  exit; }
+
+[ -z "$1" ] && { echo "`basename $0`: specify a stack name" >&2; exit 1; }
+
+$valid   && { aws cloudformation validate-template --template-body "`cat $1`"; exit; }
+
+$get     && { aws cloudformation get-template --stack-name="$1"; exit; }
+
+$delete  && aws cloudformation delete-stack --stack-name="$1"
+
+aws cloudformation describe-stacks --stack-name="$1" --query "$q" --output $fmt

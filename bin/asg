@@ -1,0 +1,94 @@
+#!/bin/bash
+
+type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
+
+opts=haf:m:M:ns:t:v
+activities=false
+fmt=$(aws configure get output)
+min=false
+max=false
+scale=false
+byname=false
+verbose=false
+termid=false
+
+function _usage {
+  cat << _USAGE_
+  `basename $0`: abbreviate common AWS AutoScaling operations
+
+  Usage:
+    `basename $0` [-$opts] <cfn-stack-name | asg-name>
+
+  Options:
+    -h          help (you are here)
+    -a          list scaling activities for a stack's auto-scaling group
+    -f <format> specify output format
+    -m <int>    set min capacity
+    -M <int>    set max capacity
+    -n          reference the autoscaling group by name
+    -s <int>    scale up a stack's autoscaling group
+    -t <id>     terminate w/o decrementing capacity (by instance id)
+    -v          verbose asg info (in default format)
+_USAGE_
+}
+
+while getopts $opts opt; do
+  case $opt in
+    h) _usage; exit                         ;;
+    a) activities=true                      ;;
+    f) [ -n "$OPTARG" ] && fmt="$OPTARG"    ;;
+    m) [ -n "$OPTARG" ] && min="$OPTARG"    ;;
+    M) [ -n "$OPTARG" ] && max="$OPTARG"    ;;
+    n) byname=true                          ;;
+    s) [ -n "$OPTARG" ] && scale="$OPTARG"  ;;
+    t) [ -n "$OPTARG" ] && termid="$OPTARG" ;;
+    v) verbose=true                         ;;
+    ?|*)  _usage; exit 2                    ;;
+  esac
+done
+
+shift $(($OPTIND-1))
+
+if [ ! $termid = false ]; then
+  aws autoscaling terminate-instance-in-auto-scaling-group \
+      --no-should-decrement-desired-capacity \
+      --instance-id $termid
+  exit
+fi
+
+[ -z $1 ] && { echo "`basename $0`: specify a name to search for" >&2; exit 1; }
+
+if $byname; then
+  grp=$1
+else
+  grp=$(aws cloudformation describe-stacks --stack-name="$1" \
+    --query 'Stacks[*].Outputs[?OutputKey==`AutoScalingGroup`].OutputValue[]' \
+    --output text)
+fi
+
+[ -n "${grp#++([[:space:]])}" ] && echo $grp || { echo "$1 not found" >&2; exit 1; }
+
+if $activities; then
+  aws autoscaling describe-scaling-activities --auto-scaling-group-name="$grp"
+  exit
+fi
+
+if $verbose; then
+  aws autoscaling describe-auto-scaling-groups --auto-scaling-group-names="$grp" --output $fmt
+  exit
+fi
+
+if [ ! $max = false ]; then
+  aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$grp" --max-size $max \
+    && echo "setting max capacity $grp to $max."
+fi
+
+if [ ! $min = false ]; then
+  aws autoscaling update-auto-scaling-group --auto-scaling-group-name "$grp" --min-size $min \
+    && echo "setting min capacity $grp to $min."
+fi
+
+if [ ! $scale = false ]; then
+  aws autoscaling set-desired-capacity --auto-scaling-group-name "$grp" --desired-capacity $scale \
+    && echo "scaling $grp to $scale."
+fi

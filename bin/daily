@@ -9,7 +9,7 @@ while getopts f opt ; do
   case $opt in
     f) fmt=%d%m%Y; qual=hour ;;
     ?|*) exit 2 ;;
-    esac
+  esac
 done
 shift $(($OPTIND-1))
 

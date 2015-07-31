@@ -1,0 +1,73 @@
+#!/bin/bash
+
+opts=hbckn:
+bashrc=false
+knownhosts=false
+
+function _usage {
+  cat << _USAGE_
+  `basename $0`: log on to a server through a jump host
+
+  Usage:
+    `basename $0` [-$opts] <dns>
+
+  Options:
+    -h        you are here
+    -b        port $HOME/.bashrc to the target machine (default: $bashrc)
+    -c        run necessary config
+    -k        remove dns entry from known_hosts file (default: $knownhosts)
+    -n <name> name the target machine (used only with \`-b\`)
+_USAGE_
+}
+
+function setup {
+  [ -z $JUMP_HOST ] \
+    && echo -n "jump host (config alias or dns): " \
+    && read jhost \
+    && echo "export JUMP_HOST=$jhost" >> $HOME/.bash_profile
+
+  [ -z $JUMP_USER ] \
+    && echo -n "Jump Host Username: " \
+    && read juser \
+    && echo "export JUMP_USER=$juser">> $HOME/.bash_profile
+
+  [ -z $JUMP_KEY ] \
+    && echo -n "absolute path to jump host key: " \
+    && read jkey \
+    && echo "export JUMP_KEY=$jkey">> $HOME/.bash_profile
+}
+
+while getopts $opts opt; do
+  case $opt in
+    h) _usage; exit     ;;
+    b) bashrc=true      ;;
+    c) setup; exit      ;;
+    k) knownhosts=true  ;;
+    n) name="$OPTARG"   ;;
+    ?|*) _usage; exit 2 ;;
+  esac
+done
+
+shift $(($OPTIND-1))
+
+[ -z $JUMP_HOST ] && { echo "JUMP_HOST not set (try `basename $0` -c)" >&2; exit 1; }
+[ -z $JUMP_USER ] && { echo "JUMP_USER not set (try `basename $0` -c)" >&2; exit 1; }
+[ -z $JUMP_KEY ]  && { echo "JUMP_KEY not set (try `basename $0` -c)" >&2;  exit 1; }
+
+proxy="ssh -W %h:%p $JUMP_HOST"
+
+[ -z $1 ] && { ssh $JUMP_HOST; exit; }
+
+$knownhosts && ssh-keygen -R $1
+
+! $bashrc && { ssh -i $JUMP_KEY -oProxyCommand="$proxy" $JUMP_USER@$1; exit; }
+
+[ ! -f $HOME/.bashrc ] && { echo "$HOME/.bashrc doesn't exist" >&2; exit 1; }
+
+t=$(mktemp /tmp/jump.bashrc.XXXX)
+
+[ -n "${name#++([[:space:]])}" ] && echo "export HOSTNAME=$name" >> $t
+cat $HOME/.bashrc >> $t
+
+scp -i $JUMP_KEY -oProxyCommand="$proxy" $t $JUMP_USER@$1:/home/$JUMP_USER/.bashrc \
+  && { rm -f $f; ssh -i $JUMP_KEY -oProxyCommand="$proxy" $JUMP_USER@$1; }

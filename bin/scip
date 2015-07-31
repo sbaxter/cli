@@ -1,0 +1,68 @@
+#!/bin/bash
+
+opts=hcdio
+i=true
+o=false
+debug=false
+
+function _usage {
+  cat << _USAGE_
+  `basename $0`: scp through a jump host
+
+  Usage:
+    `basename $0` <dns> [-$opts] <remote-dns> <remote-file> <local-file>
+
+  Options:
+    -h you are here
+    -c add necessary config to $HOME/.bash_profile
+    -d dry run (default: $debug)
+    -i copy FROM remote machine (default: $i)
+    -o copy TO remote machine (default: $o)
+_USAGE_
+}
+
+function setup {
+  [ -z $JUMP_HOST ] \
+    && echo -n "jump host (config alias or dns): " \
+    && read jhost \
+    && echo "export JUMP_HOST=$jhost" >> $HOME/.bash_profile
+
+  [ -z $JUMP_USER ] \
+    && echo -n "Jump Host Username: " \
+    && read juser \
+    && echo "export JUMP_USER=$juser">> $HOME/.bash_profile
+
+  [ -z $JUMP_KEY ] \
+    && echo -n "absolute path to jump key: " \
+    && read jkey \
+    && echo "export JUMP_KEY=$jkey">> $HOME/.bash_profile
+}
+
+
+while getopts $opts opt; do
+  case $opt in
+    h) _usage; exit      ;;
+    c) setup; exit       ;;
+    d) debug=true        ;;
+    i) i=true && o=false ;;
+    o) o=true && i=false ;;
+    ?|*)  _usage; exit 2 ;;
+  esac
+done
+
+shift $(($OPTIND-1))
+
+[ -z $JUMP_HOST ] && { echo "JUMP_HOST not set (try `basename $0` -c)" >&2; exit 1; }
+[ -z $JUMP_USER ] && { echo "JUMP_USER not set (try `basename $0` -c)" >&2; exit 1; }
+[ -z $JUMP_KEY ]  && { echo "JUMP_KEY not set (try `basename $0` -c)" >&2;  exit 1; }
+[[ -z $1 || -z $2 || -z $3 ]] && { _usage; exit 1; }
+
+proxy="ssh -W %h:%p $JUMP_HOST"
+remote=$JUMP_USER@$1:$2
+loc=$3
+
+$i && order="$remote $loc"
+$o && order="$loc $remote"
+
+$debug && echo scp -i $JUMP_KEY -oProxyCommand="$proxy" $order \
+       ||      scp -i $JUMP_KEY -oProxyCommand="$proxy" $order

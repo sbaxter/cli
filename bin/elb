@@ -1,0 +1,36 @@
+#!/bin/bash
+
+type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
+
+opts=hf:i
+instances=true
+fmt=text
+
+function _usage {
+  cat << _USAGE_
+  `basename $0`: abbreviate common AWS ElasticLoadBalancer operations
+
+  Usage:
+    `basename $0` [-$opts] <elb>
+
+  Options:
+    -h help (you are here)
+    -f specify aws cli output format (default: $fmt)
+    -i describe attached elb instances (default: $instances)
+_USAGE_
+}
+
+while getopts $opts opt; do
+  case $opt in
+    h) _usage; exit                      ;;
+    f) [ -n "$OPTARG" ] && fmt="$OPTARG" ;;
+    i) instances=true                    ;;
+    ?|*)  _usage; exit 2                 ;;
+  esac
+done
+
+shift $(($OPTIND-1))
+
+[ -z "$1" ] && { echo "`basename $0`: specify an elb name" >&2; exit 1; }
+
+aws elb describe-instance-health --output $fmt --load-balancer-name "$1"

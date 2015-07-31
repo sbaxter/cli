@@ -1,0 +1,24 @@
+#!/bin/bash
+
+[ -z "$UPDATE_LIST" ] && { echo '$UPDATE_LIST is empty.' >&2; exit 1; }
+
+function _gbranch {
+  local sym=$(git symbolic-ref HEAD 2>/dev/null)
+  [ -z $sym ] && sym=$(git describe --contains --all HEAD)
+  [ -z $sym ] && sym=$(git rev-parse --short HEAD)
+  echo ${sym##refs/heads/}
+}
+
+function _safe_git_sync {
+  [ $(_gbranch) != "master" ] && echo "UNABLE TO UPDATE: not on master!" && return 1
+  git diff --no-ext-diff --quiet --exit-code \
+    && git pull --quiet origin master >/dev/null \
+    || echo "UNABLE TO UPDATE (DIRTY)"
+}
+
+for d in $UPDATE_LIST; do
+  pushd "$d" > /dev/null
+  echo "Updating $d"
+  _safe_git_sync
+  popd > /dev/null
+done

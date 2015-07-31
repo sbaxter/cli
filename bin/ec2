@@ -1,0 +1,75 @@
+#!/bin/bash
+
+type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
+
+opts=hf:iIjJknrvD
+jumpto=false
+byid=false
+fmt=text
+jargs=
+terminate=false
+running="Name=instance-state-name,Values=running"
+bq="[Reservations[*].Instances[*]"
+dnsq="$bq.[PublicDnsName]]"
+nameq="$bq.[PublicDnsName,Tags[?Key==\`Name\`].Value]]"
+idq="$bq.[InstanceId]]"
+q="$dnsq"
+
+function _usage {
+  cat << _USAGE_
+  `basename $0`: AWS ec2 info shortcuts
+
+  Usage:
+    `basename $0` [-$opts] <tag | instance-id...>
+
+  Options:
+    -h          help (you are here)
+    -f <format> specify output format
+    -i          key on instance id (instead of tag)
+    -I          return instance id
+    -j          jump on to the located server (through a configured jump host)
+    -J          same as \`j\`, but port local bashrc to the located server first
+    -k          remove known_hosts entry before jump
+    -n          show tag with dns output
+    -r          do NOT filter for running instances
+    -v          verbose instance info (in default format)
+    -D          terminate instance (by instance id)
+_USAGE_
+}
+
+while getopts $opts opt; do
+  case $opt in
+    h) _usage; exit                                           ;;
+    f) [ -n "$OPTARG" ] && fmt="$OPTARG"                      ;;
+    i) byid=true                                              ;;
+    I) q=$idq; fmt=text                                       ;;
+    j) jumpto=true                                            ;;
+    J) jargs="${jargs}b"; jumpto=true                         ;;
+    k) jargs="${jargs}k"                                      ;;
+    n) q=$nameq; fmt=text                                     ;;
+    r) running=                                               ;;
+    v) q="[Reservations[*]]"; fmt=$(aws configure get output) ;;
+    D) terminate=true                                         ;;
+    ?|*)  _usage; exit 2                                      ;;
+  esac
+done
+
+shift $(($OPTIND-1))
+
+[ -z $1 ] && { echo "`basename $0`: specify a tag to search by" >&2; exit 1; }
+
+$terminate && { aws ec2 terminate-instances --instance-ids $@; exit; }
+
+$byid && filters="--instance-ids $@" || filters="Name=tag-value,Values=*$1*"
+
+aws ec2 describe-instances --output $fmt --query $q --filters $running $filters
+
+$jumpto || exit
+
+type jump >/dev/null 2>&1 || { echo "$0: jump not installed" >&2; exit 1; }
+
+dns=$(aws ec2 describe-instances --output text --query $dnsq --filters $running $filters | head -n 1)
+
+[ -z "$dns" ] && { echo "$1 not found." >&2; exit 1; }
+
+jump -${jargs}n $1 $dns
