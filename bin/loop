@@ -1,26 +1,32 @@
 #!/bin/bash
 
-function _usage {
-  cat << _USAGE_
-  `basename $0` [hdes] - repeate a command over and over and over and over...
-
-    -h           you are here.
-    -d           print a divider between iteration outputs
-    -e           exit on error
-    -s <seconds> number of seconds between iterations.
-_USAGE_
-}
-
+opts=hdes:
 divider=false
 exit_on_error=false
 seconds=5
-while getopts hdes: opt ; do
+
+function _usage {
+  cat << _USAGE_
+  `basename $0`: repeat a command ad infinitum
+
+  Usage:
+    `basename $0` [hdes] <command...>
+
+  Options:
+    -h           you are here.
+    -d           print a divider between iteration outputs
+    -e           exit on error
+    -s <seconds> number of seconds between iterations (default: $seconds)
+_USAGE_
+}
+
+while getopts $opts opt; do
   case $opt in
-    h) _usage; exit ;;
-    d) divider=true ;;
-    e) exit_on_error=true ;;
-    s) [ -n "$OPTARG" ] && seconds="$OPTARG" || exit 1 ;;
-    ?|*)  exit 2;;
+    h) _usage; exit                          ;;
+    d) divider=true                          ;;
+    e) exit_on_error=true                    ;;
+    s) [ -n "$OPTARG" ] && seconds="$OPTARG" ;;
+    ?|*)  exit 2                             ;;
   esac
 done
 
