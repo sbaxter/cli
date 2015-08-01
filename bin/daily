@@ -7,7 +7,7 @@ fmt=%s
 qual=day
 while getopts f opt ; do
   case $opt in
-    f) fmt=%d%m%Y; qual=hour ;;
+    f) fmt=%Y%m%d; qual=hour ;;
     ?|*) exit 2 ;;
   esac
 done
