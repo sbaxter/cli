@@ -106,7 +106,7 @@ function _gprompt {
   fi
 
   w=$(git diff --no-ext-diff --quiet --exit-code || echo "!")
-  u=$([ -z $(git ls-files --others --exclude-standard) >/dev/null 2>&1 ] || echo "?")
+  u=$([ -z $(git ls-files --others --exclude-standard -- ':/*') >/dev/null 2>&1 ] || echo "?")
 
   echo "[$branch$CYAN$w$i$u$PROMPT_COLOR]"
 }
