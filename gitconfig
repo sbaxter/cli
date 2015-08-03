@@ -1,6 +1,6 @@
 [user]
-  name = Seth Baxter
-  email = me+@sethbaxter.com
+  name = <NAME>
+  email = <EMAIL>
 [core]
   whitespace = trailing-space
   autocrlf = input
@@ -21,4 +21,4 @@
 [color "diff"]
   new = white
 [github]
-  user = sbaxter
+  user = <USERNAME>
