@@ -70,4 +70,4 @@ t=$(mktemp /tmp/jump.bashrc.XXXX)
 cat $HOME/.bashrc >> $t
 
 scp -i $JUMP_KEY -oProxyCommand="$proxy" $t $JUMP_USER@$1:/home/$JUMP_USER/.bashrc \
-  && { rm -f $f; ssh -i $JUMP_KEY -oProxyCommand="$proxy" $JUMP_USER@$1; }
+  && { rm -f $t; ssh -i $JUMP_KEY -oProxyCommand="$proxy" $JUMP_USER@$1; }
