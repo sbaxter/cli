@@ -43,6 +43,8 @@ Example from my `.bash_profile`:
   daily backup
 ```
 
+*Note: `anacron` may be a better option for stuff like this: write the output to a file and cat the results on login.*
+
 ### [`backup`](./bin/backup)
 A script I use to backup key files to AWS s3. To use, just set the `$BACKUP_LIST` environment variable to contain a list of files and directories to backup.
 
@@ -58,7 +60,56 @@ Example on Mac OSX:
 *Note: `$HOME/ssh/config` is automatically backed up by this script; a list of brew packages is also stored on Mac OSX.*
 
 ### AWS scripts
+#### [`cfn`](./bin/cfn)
+* View stack status:
+```
+  $: cfn my-app
+  my-app     UPDATE_COMPLETE
+```
+* Retrieve a stack output or parameter:
+```
+  $: cfn -o ELBDNS my-app
+  my-app-XXXXXXXXX.us-east-1.elb.amazonaws.com
+
+  $: cfn -p Stage my-app
+  production
+```
+* validate a cloudformation template:
+```
+  $: cfn -t cfn-template.json
+
+  A client error (ValidationError) occurred when calling the ValidateTemplate operation: Template format error: JSON not well-formed. (line 1, column 3)
+```
+* Run `cfn -h` for more options.
+
+#### [`ec2`](./bin/ec2)
+* Return ec2 public dns by `Tag` (verbose instance information with `-v`):
+```
+  $: ec2 my-app
+  ec2-XX-XX-XXX-XXX.compute-1.amazonaws.com
+```
+* Return ec2 public dns by `instance-id` (verbose instance information with `-v`):
+```
+  $: ec2 -i i-bc9af510
+  ec2-XX-XX-XXX-XXX.compute-1.amazonaws.com
+```
+* If [`jump`](./bin/jump) is available, you can jump to the server through a jump host in one command:
+```
+  $: ec2 -j my-app
+  ..ssh session..
+```
+* Alternatively, you can ssh directly:
+```
+  $: ssh $(ec2 my-app | head -n 1)
+```
+* Run `ec2 -h` for more options.
+
+#### `asg`
 TODO
+
+#### `elb`
+TODO
+
 
 ## Credits
 * [georgeflanagin](https://github.com/georgeflanagin): my cli sensei
