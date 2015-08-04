@@ -126,6 +126,7 @@ alias rm='rm -i '
 alias cp='cp -i '
 alias mv='mv -i '
 alias ll="ls -l "
+alias lla="ls -al"
 alias vi="vim "
 alias grep="grep --color=auto"
 alias back="cd -"
