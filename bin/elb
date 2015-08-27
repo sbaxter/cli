@@ -2,35 +2,67 @@
 
 type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
 
-opts=hf:i
-instances=true
+opts=hdf:isv
+dns=false
+instances=false
 fmt=text
+ssl=false
+verbose=true
 
 function _usage {
   cat << _USAGE_
   `basename $0`: abbreviate common AWS ElasticLoadBalancer operations
 
   Usage:
-    `basename $0` [-$opts] <elb>
+    `basename $0` [-$opts] <elb|[elb..]>
 
   Options:
     -h help (you are here)
+    -d for a given load balancer(s), return the dns
     -f specify aws cli output format (default: $fmt)
     -i describe attached elb instances (default: $instances)
+    -s list active SSL certs (default: $ssl)
+    -v verbose description of elb(s) (default behavior with no flags given)
 _USAGE_
 }
 
 while getopts $opts opt; do
   case $opt in
     h) _usage; exit                      ;;
+    d) dns=true; verbose=false           ;;
     f) [ -n "$OPTARG" ] && fmt="$OPTARG" ;;
-    i) instances=true                    ;;
+    i) instances=true; verbose=false     ;;
+    s) ssl=true; verbose=false           ;;
+    v) verbose=true                      ;;
     ?|*)  _usage; exit 2                 ;;
   esac
 done
 
 shift $(($OPTIND-1))
 
+if $ssl; then
+  aws elb describe-load-balancers \
+    --query "LoadBalancerDescriptions[*].ListenerDescriptions[*].Listener.SSLCertificateId" \
+    --output text |
+    grep arn |
+    sort |
+    uniq
+
+  exit
+fi
+
 [ -z "$1" ] && { echo "`basename $0`: specify an elb name" >&2; exit 1; }
 
-aws elb describe-instance-health --output $fmt --load-balancer-name "$1"
+
+if $instances; then
+  aws elb describe-instance-health --output $fmt --load-balancer-name "$1"
+fi
+
+if $dns; then
+  aws elb describe-load-balancers --output $fmt --load-balancer-names $@ \
+      --query "LoadBalancerDescriptions[*].DNSName"
+fi
+
+if $verbose; then
+  aws elb describe-load-balancers --output $fmt --load-balancer-names $@
+fi
