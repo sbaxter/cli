@@ -2,12 +2,13 @@
 
 type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
 
-opts=hdf:isv
+opts=hdf:istv
 dns=false
 instances=false
 fmt=text
 ssl=false
 verbose=true
+hct=false
 
 function _usage {
   cat << _USAGE_
@@ -22,6 +23,7 @@ function _usage {
     -f specify aws cli output format (default: $fmt)
     -i describe attached elb instances (default: $instances)
     -s list active SSL certs (default: $ssl)
+    -t return health check target for a given elb (default: $hct)
     -v verbose description of elb(s) (default behavior with no flags given)
 _USAGE_
 }
@@ -33,6 +35,7 @@ while getopts $opts opt; do
     f) [ -n "$OPTARG" ] && fmt="$OPTARG" ;;
     i) instances=true; verbose=false     ;;
     s) ssl=true; verbose=false           ;;
+    t) hct=true; verbose=false           ;;
     v) verbose=true                      ;;
     ?|*)  _usage; exit 2                 ;;
   esac
@@ -61,6 +64,11 @@ fi
 if $dns; then
   aws elb describe-load-balancers --output $fmt --load-balancer-names $@ \
       --query "LoadBalancerDescriptions[*].DNSName"
+fi
+
+if $hct; then
+  aws elb describe-load-balancers --output $fmt --load-balancer-names $@ \
+      --query "LoadBalancerDescriptions[*].HealthCheck.Target"
 fi
 
 if $verbose; then
