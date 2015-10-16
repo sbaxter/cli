@@ -18,6 +18,12 @@
 "No tabs.
 :set expandtab
 
+:au! Syntax clojure source $VI_CONFIG/syntax/clojure.vim
+:au! Syntax json source $VI_CONFIG/syntax/json.vim
+:au! Syntax less source $VI_CONFIG/syntax/less.vim
+:au! Syntax md source $VI_CONFIG/syntax/md.vim
+:au! Syntax mustache source $VI_CONFIG/syntax/mustache.vim
+
 
 "Begin autocommands
 "Check to see if we already have defined these

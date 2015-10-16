@@ -61,6 +61,7 @@ export GIT_EDITOR=$VISUAL
 # Add bin files to $PATH
 _bashrc="${BASH_SOURCE[0]}"
 [ -h "$_bashrc" ] && export PATH=$PATH:$(dirname $(readlink $_bashrc))/bin
+[ -h "$_bashrc" ] && export VI_CONFIG=$(dirname $(readlink $_bashrc))/vi
 
 # cmd history
 export HISTCONTROL=erasedups:ignoreboth
