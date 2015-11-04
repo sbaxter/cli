@@ -1,0 +1,35 @@
+#!/bin/bash
+
+opts=l:s
+chars='_.!@#$%^&*A-Z-a-z-0-9'
+len=16
+special=true
+
+function _usage {
+  cat << _USAGE_
+  `basename $0`: quickly generate a temporary password for someone
+
+  Usage:
+    `basename $0` [-$opts]
+
+  Options:
+    -h          help (you are here)
+    -l <int>    length (default: $len)
+    -s          no special characters
+_USAGE_
+}
+
+while getopts $opts opt; do
+  case $opt in
+    h) _usage; exit                    ;;
+    l) [ -n "$OPTARG" ] && len=$OPTARG ;;
+    s) chars=A-Z-a-z-0-9               ;;
+    ?|*) _usage; exit 2                ;;
+  esac
+done
+
+shift $(($OPTIND-1))
+
+export LC_CTYPE=C
+
+< /dev/urandom tr -dc $chars | head -c${1:-$len};
