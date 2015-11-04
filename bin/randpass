@@ -3,7 +3,6 @@
 opts=l:s
 chars='_.!@#$%^&*A-Z-a-z-0-9'
 len=16
-special=true
 
 function _usage {
   cat << _USAGE_
