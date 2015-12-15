@@ -60,10 +60,10 @@ $listing && { liststacks $1;  exit; }
 
 [ -z "$1" ] && { echo "`basename $0`: specify a stack name" >&2; exit 1; }
 
-$valid   && { aws cloudformation validate-template --template-body "`cat $1`"; exit; }
+( $valid || [ -f "$1" ] ) && { aws cloudformation validate-template --template-body "`cat $1`"; exit; }
 
-$get     && { aws cloudformation get-template --stack-name="$1"; exit; }
+$get && { aws cloudformation get-template --stack-name="$1"; exit; }
 
-$delete  && aws cloudformation delete-stack --stack-name="$1"
+$delete && aws cloudformation delete-stack --stack-name="$1"
 
 aws cloudformation describe-stacks --stack-name="$1" --query "$q" --output $fmt
