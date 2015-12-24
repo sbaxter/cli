@@ -42,6 +42,7 @@ export LS_COLORS='di=0;32'
 # DEFAULTS (stick them in .bash_profile)
 # -------------------------------------------------------------------------
 : ${PROMPT_COLOR:=$YELLOW}
+: ${ORG:=}
 : ${REPO:=~/repos}
 : ${WWW_HOME:=https://google.com}
 : ${USER_TAG:="($USER)"}
@@ -188,7 +189,7 @@ function gu {
 # REPOS
 # -------------------------------------------------------------------------
 function repo {
-  cd $REPO/$1
+  [ -z "$ORG" ] && cd $REPO/$1 || cd $REPO/$ORG/$1
 }
 
 # auto-complete for repo
