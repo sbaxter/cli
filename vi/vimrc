@@ -37,10 +37,11 @@
 :  au BufNewFile,BufRead *.mst      set filetype=mustache
 :  au BufNewFile,BufRead *.mustache set filetype=mustache
 :  au BufNewFile,BufRead *.clj      set filetype=clojure
+:  au BufNewFile,BufRead *.go       set filetype=go
 
 "Highlight trailing whitespace, tabs, and long lines.
 :  hi unwanted ctermbg=cyan guibg=cyan
-:  au BufReadPost,InsertLeave * match unwanted /\s\+\%#\@<!$\|\t/
+":  au BufReadPost,InsertLeave * match unwanted /\s\+\%#\@<!$\|\t/
 
 "Highlight the 80th column if available.
 :  if exists( '+colorcolumn' )
