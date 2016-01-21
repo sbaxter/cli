@@ -197,9 +197,9 @@ _repo_dir () {
   local cur=${COMP_WORDS[COMP_CWORD]}
   local prev=${COMP_WORDS[COMP_CWORD-1]}
   if [ $COMP_CWORD -eq 1 ]; then
-      COMPREPLY=( $( compgen -W "$(cd "$REPO" && find . -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)" -- $cur ) )
+      COMPREPLY=( $( compgen -W "$(cd "$REPO/$ORG" && find . -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)" -- $cur ) )
   elif [ $COMP_CWORD -eq 2 ]; then
-      COMPREPLY=( $( compgen -W "$(cd "$REPO/$prev" && find . -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)" -- $cur ) )
+      COMPREPLY=( $( compgen -W "$(cd "$REPO/$ORG/$prev" && find . -mindepth 1 -maxdepth 1 -type d -exec basename {} \;)" -- $cur ) )
   fi
   return 0
 }
