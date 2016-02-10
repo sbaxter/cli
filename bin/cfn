@@ -2,10 +2,12 @@
 
 type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
 
-opts=hf:glo:p:tvD
+opts=he:f:glo:p:tvD
 delete=false
 fmt=text
 listing=false
+events=false
+enum=1
 get=false
 valid=false
 bq="Stacks[*]"
@@ -20,6 +22,7 @@ function _usage {
 
   Options:
     -h             help (you are here)
+    -e <int>       display n number stack events
     -f <format>    specify output format
     -g             display the stack's cloudformation template
     -l             list stacks using prefix search
@@ -42,6 +45,7 @@ function liststacks {
 while getopts $opts opt; do
   case $opt in
     h) _usage; exit                           ;;
+    e) events=true && enum="$OPTARG"          ;;
     f) [ -n "$OPTARG" ] && fmt="$OPTARG"      ;;
     g) get=true                               ;;
     l) listing=true                           ;;
@@ -65,5 +69,13 @@ $listing && { liststacks $1;  exit; }
 $get && { aws cloudformation get-template --stack-name="$1"; exit; }
 
 $delete && aws cloudformation delete-stack --stack-name="$1"
+
+if $events; then
+  aws cloudformation describe-stack-events --stack-name $1 --output text \
+    --max-items=$enum --query=StackEvents[].[LogicalResourceId,ResourceStatus] \
+    | head -n $enum
+  exit
+fi
+
 
 aws cloudformation describe-stacks --stack-name="$1" --query "$q" --output $fmt
