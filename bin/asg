@@ -2,7 +2,7 @@
 
 type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
 
-opts=haf:m:M:ns:t:v
+opts=haf:m:M:ns:t:T:v
 activities=false
 fmt=$(aws configure get output)
 min=false
@@ -28,6 +28,7 @@ function _usage {
     -n          reference the autoscaling group by name
     -s <int>    scale up a stack's autoscaling group
     -t <id>     terminate w/o decrementing capacity (by instance id)
+    -T <id>     terminate and decrement capacity (by instance id)
     -v          verbose asg info (in default format)
 _USAGE_
 }
@@ -41,6 +42,7 @@ while getopts $opts opt; do
     M) [ -n "$OPTARG" ] && max="$OPTARG"    ;;
     n) byname=true                          ;;
     s) [ -n "$OPTARG" ] && scale="$OPTARG"  ;;
+    T) [ -n "$OPTARG" ] && dtermid="$OPTARG" ;;
     t) [ -n "$OPTARG" ] && termid="$OPTARG" ;;
     v) verbose=true                         ;;
     ?|*)  _usage; exit 2                    ;;
@@ -53,6 +55,13 @@ if [ ! $termid = false ]; then
   aws autoscaling terminate-instance-in-auto-scaling-group \
       --no-should-decrement-desired-capacity \
       --instance-id $termid
+  exit
+fi
+
+if [ ! $dtermid = false ]; then
+  aws autoscaling terminate-instance-in-auto-scaling-group \
+      --should-decrement-desired-capacity \
+      --instance-id $dtermid
   exit
 fi
 
