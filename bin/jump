@@ -35,6 +35,11 @@ function setup {
     && echo -n "absolute path to jump host key: " \
     && read jkey \
     && echo "export JUMP_KEY=$jkey">> $HOME/.bash_profile
+
+  [ -z $JUMP_PORT ] \
+    && echo -n "jump port: " \
+    && read jport \
+    && echo "export JUMP_PORT=$jport">> $HOME/.bash_profile
 }
 
 while getopts $opts opt; do
@@ -54,13 +59,15 @@ shift $(($OPTIND-1))
 [ -z $JUMP_USER ] && { echo "JUMP_USER not set (try `basename $0` -c)" >&2; exit 1; }
 [ -z $JUMP_KEY ]  && { echo "JUMP_KEY not set (try `basename $0` -c)" >&2;  exit 1; }
 
+: ${JUMP_PORT:=22 }
+
 proxy="ssh -W %h:%p $JUMP_HOST"
 
-[ -z $1 ] && { ssh $JUMP_HOST; exit; }
+[ -z $1 ] && { ssh -p $JUMP_PORT -i $JUMP_KEY $JUMP_USER@$JUMP_HOST; exit; }
 
 $knownhosts && ssh-keygen -R $1
 
-! $bashrc && { ssh -i $JUMP_KEY -oProxyCommand="$proxy" $JUMP_USER@$1; exit; }
+! $bashrc && { ssh -p $JUMP_PORT -i $JUMP_KEY -oProxyCommand="$proxy" $JUMP_USER@$1; exit; }
 
 [ ! -f $HOME/.bashrc ] && { echo "$HOME/.bashrc doesn't exist" >&2; exit 1; }
 
@@ -69,5 +76,5 @@ t=$(mktemp /tmp/jump.bashrc.XXXX)
 [ -n "${name#++([[:space:]])}" ] && echo "export HOSTNAME=$name" >> $t
 cat $HOME/.bashrc >> $t
 
-scp -i $JUMP_KEY -oProxyCommand="$proxy" $t $JUMP_USER@$1:/home/$JUMP_USER/.bashrc \
-  && { rm -f $t; ssh -i $JUMP_KEY -oProxyCommand="$proxy" $JUMP_USER@$1; }
+scp -p $JUMP_PORT -i $JUMP_KEY -oProxyCommand="$proxy" $t $JUMP_USER@$1:/home/$JUMP_USER/.bashrc \
+  && { rm -f $t; ssh -p $JUMP_PORT -i $JUMP_KEY -oProxyCommand="$proxy" $JUMP_USER@$1; }
