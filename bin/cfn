@@ -2,11 +2,12 @@
 
 type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
 
-opts=he:f:glo:p:tvD
+opts=he:f:glo:p:tvwD
 delete=false
 fmt=text
 listing=false
 events=false
+waitfor=false
 enum=1
 get=false
 valid=false
@@ -30,15 +31,16 @@ function _usage {
     -p <parameter> display stack parameter value
     -t <file>      validate a cloudformation template file
     -v             verbose stack info (in default format)
+    -w             wait for stack to complete
     -D             delete stack
 _USAGE_
 }
 
 function liststacks {
   if [ -z $1 ]; then
-    aws cloudformation describe-stacks --query="Stacks[*].[StackName]" --output text | sort
+    aws cloudformation list-stacks --query="StackSummaries[?StackStatus!=\`DELETE_COMPLETE\`].[StackName]" --output text | sort
   else
-    aws cloudformation describe-stacks --query="Stacks[*].[StackName]" --output text | grep $1
+    aws cloudformation list-stacks --query="StackSummaries[?starts_with(StackName,\`$1\`)==\`true\`]|[?StackStatus!=\`DELETE_COMPLETE\`].[StackName]" --output text
   fi
 }
 
@@ -52,6 +54,7 @@ while getopts $opts opt; do
     o) [ -n "$OPTARG" ] && q="$bq.Outputs[?OutputKey==\`$OPTARG\`].OutputValue[]"          ;;
     p) [ -n "$OPTARG" ] && q="$bq.Parameters[?ParameterKey==\`$OPTARG\`].ParameterValue[]" ;;
     t) valid=true                             ;;
+    w) waitfor=true                           ;;
     v) q=$bq; fmt=$(aws configure get output) ;;
     D) delete=true                            ;;
     ?|*) echo; _usage; exit 2                 ;;
@@ -79,3 +82,18 @@ fi
 
 
 aws cloudformation describe-stacks --stack-name="$1" --query "$q" --output $fmt
+
+s=$?
+
+! $waitfor && exit $s
+
+event="IN_PROGRESS"
+
+while [[ $event =~ IN_PROGRESS$ ]]; do
+  sleep 5
+  event=`aws cloudformation describe-stacks --stack-name $1 --query Stacks[].StackStatus --output text 2>/dev/null`
+  aws cloudformation describe-stack-events --stack-name $1 --output text \
+    --max-items=1 --query=StackEvents[].[LogicalResourceId,ResourceStatus] | head -n 1
+done
+
+echo $event
