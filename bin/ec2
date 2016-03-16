@@ -2,7 +2,7 @@
 
 type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
 
-opts=hf:iIjJknrvD
+opts=hf:iIjJknprvD
 jumpto=false
 byid=false
 fmt=text
@@ -11,6 +11,7 @@ terminate=false
 running="Name=instance-state-name,Values=running"
 bq="[Reservations[*].Instances[*]"
 dnsq="$bq.[PublicDnsName]]"
+ipq="$bq.[PrivateIpAddress]]"
 nameq="$bq.[PublicDnsName,Tags[?Key==\`Name\`].Value]]"
 idq="$bq.[InstanceId]]"
 q="$dnsq"
@@ -31,6 +32,7 @@ function _usage {
     -J          same as \`j\`, but port local bashrc to the located server first
     -k          remove known_hosts entry before jump
     -n          show tag with dns output
+    -p          return private ip address
     -r          do NOT filter for running instances
     -v          verbose instance info (in default format)
     -D          terminate instance (by instance id)
@@ -47,6 +49,7 @@ while getopts $opts opt; do
     J) jargs="${jargs}b"; jumpto=true                         ;;
     k) jargs="${jargs}k"                                      ;;
     n) q=$nameq; fmt=text                                     ;;
+    p) q=$ipq; fmt=text                                       ;;
     r) running=                                               ;;
     v) q="[Reservations[*]]"; fmt=$(aws configure get output) ;;
     D) terminate=true                                         ;;
