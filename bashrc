@@ -373,7 +373,7 @@ function internalip {
 }
 
 function externalip {
-  curl ifconfig.me
+  curl checkip.amazonaws.com
 }
 # -------------------------------------------------------------------------
 
