@@ -138,6 +138,7 @@ alias ..3="cd ../../.."
 alias ..4="cd ../../../.."
 alias ..5="cd ../../../../.."
 alias lynx="lynx -accept_all_cookies -vikeys"
+alias mfa="source source-aws-mfa"
 
 # aws regions
 for region in us-east-1 us-west-2 us-west-1 ap-northeast-1 \

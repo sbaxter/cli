@@ -1,0 +1,29 @@
+#!/bin/bash -e
+do_xtrace=$(echo $SHELLOPTS | grep -o xtrace | cat)
+set +x
+oldhistfile="$HISTFILE"
+export HISTFILE=/dev/null
+
+[ "$(basename -- $0)" = "source-aws-mfa" ] && { echo "$0: must be sourced." >&2; exit 1; } || true
+
+[ -z "$AWS_SESSION_TOKEN" ] && { echo "MFA authentication will not work from within an existing session." >&2; return 1; } || true
+
+serial="$AWS_MFA_DEVICE"
+[ -z "$serial" ] && serial=$(aws iam list-mfa-devices --query 'MFADevices[0].SerialNumber' --output text) || true
+[ -z "$serial" ] && { echo "MFA Device not found." >&2; return 1; } || true
+
+mfacode="$1"
+[ -z "$mfacode" ] && { echo -n 'token: '; read mfacode; } || true
+[ -z "$mfacode" ] && { echo "MFA Token is required." >&2; return 1; } || true
+
+json="$(aws sts get-session-token --serial-number "$serial" --token-code "$mfacode" --duration-seconds 43200 --output json)"
+
+export AWS_ACCESS_KEY_ID="$(echo "$json" | grep AccessKeyId | sed -e 's/^ *"AccessKeyId": "//' -e 's/",*.*$//')"
+export AWS_ACCESS_KEY="$AWS_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$(echo "$json" | grep SecretAccessKey | sed -e 's/^ *"SecretAccessKey": "//' -e 's/",*.*$//')"
+export AWS_SECRET_KEY="$AWS_SECRET_ACCESS_KEY"
+export AWS_SECURITY_TOKEN="$(echo "$json" | grep SessionToken | sed -e 's/^ *"SessionToken": "//' -e 's/",*.*$//')"
+export AWS_SESSION_TOKEN="$AWS_SECURITY_TOKEN"
+
+export HISTFILE="$oldhistfile"
+[ -z "$do_xtrace" ] || set -x
