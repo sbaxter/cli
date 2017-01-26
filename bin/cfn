@@ -55,7 +55,7 @@ while getopts $opts opt; do
     p) [ -n "$OPTARG" ] && q="$bq.Parameters[?ParameterKey==\`$OPTARG\`].ParameterValue[]" ;;
     t) valid=true                             ;;
     w) waitfor=true                           ;;
-    v) q=$bq; fmt=$(aws configure get output) ;;
+    v) q=$bq; fmt=$(aws configure get output || echo json) ;;
     D) delete=true                            ;;
     ?|*) echo; _usage; exit 2                 ;;
   esac
