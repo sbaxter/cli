@@ -6,7 +6,7 @@ export HISTFILE=/dev/null
 
 [ "$(basename -- $0)" = "source-aws-mfa" ] && { echo "$0: must be sourced." >&2; exit 1; } || true
 
-[ -z "$AWS_SESSION_TOKEN" ] && { echo "MFA authentication will not work from within an existing session." >&2; return 1; } || true
+[ -z "$AWS_SESSION_TOKEN" ] || { echo "MFA authentication will not work from within an existing session." >&2; return 1; }
 
 serial="$AWS_MFA_DEVICE"
 [ -z "$serial" ] && serial=$(aws iam list-mfa-devices --query 'MFADevices[0].SerialNumber' --output text) || true
