@@ -38,6 +38,8 @@
 :  au BufNewFile,BufRead *.mustache set filetype=mustache
 :  au BufNewFile,BufRead *.clj      set filetype=clojure
 :  au BufNewFile,BufRead *.go       set filetype=go
+:  au BufNewFile,BufRead Jenkinsfile set filetype=groovy
+:  au BufNewFile,BufRead JenkinsFile set filetype=groovy
 
 "Highlight trailing whitespace, tabs, and long lines.
 :  hi unwanted ctermbg=cyan guibg=cyan
