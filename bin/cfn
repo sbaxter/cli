@@ -74,9 +74,8 @@ $get && { aws cloudformation get-template --stack-name="$1"; exit; }
 $delete && aws cloudformation delete-stack --stack-name="$1"
 
 if $events; then
-  aws cloudformation describe-stack-events --stack-name $1 --output text \
-    --max-items=$enum --query=StackEvents[].[LogicalResourceId,ResourceStatus] \
-    | head -n $enum
+  aws cloudformation describe-stack-events --stack-name $1 --output $fmt \
+    --max-items=$enum --query=StackEvents[].[LogicalResourceId,ResourceStatus,ResourceStatusReason]
   exit
 fi
 
