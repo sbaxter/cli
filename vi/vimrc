@@ -41,6 +41,9 @@
 :  au BufNewFile,BufRead Jenkinsfile set filetype=groovy
 :  au BufNewFile,BufRead JenkinsFile set filetype=groovy
 
+autocmd filetype python set tabstop=4
+autocmd filetype python set shiftwidth=4
+
 "Highlight trailing whitespace, tabs, and long lines.
 :  hi unwanted ctermbg=cyan guibg=cyan
 ":  au BufReadPost,InsertLeave * match unwanted /\s\+\%#\@<!$\|\t/
