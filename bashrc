@@ -175,10 +175,13 @@ function gp {
   local branch
   git status >/dev/null 2>&1 || return;
 
+  remote=origin
+  test -z "$1" || remote="$1"
+
   branch=$(git symbolic-ref HEAD 2>/dev/null)
   [ -z $branch ] && echo "Detached state?" && return 1
-  echo "pushing to origin/$branch"
-  git push origin $branch
+  echo "pushing to $remote/$branch"
+  git push $remote $branch
 }
 
 function gu {
@@ -275,6 +278,10 @@ fi
 
 function isrunning {
   ps -ef | grep -i $1 | grep -v grep
+}
+
+function wpid {
+  ps -ef | grep -i $1 | grep -v grep | awk '{print $2}'
 }
 
 # -------------------------------------------------------------------------
