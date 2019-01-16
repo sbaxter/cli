@@ -31,18 +31,20 @@
 :  let au_loaded = 1
 
 "Special syntax files
-:  au BufNewFile,BufRead *.less     set filetype=less
-:  au BufNewFile,BufRead *.json     set filetype=json
-:  au BufNewFile,BufRead *.md       set filetype=md
-:  au BufNewFile,BufRead *.mst      set filetype=mustache
-:  au BufNewFile,BufRead *.mustache set filetype=mustache
-:  au BufNewFile,BufRead *.clj      set filetype=clojure
-:  au BufNewFile,BufRead *.go       set filetype=go
+:  au BufNewFile,BufRead *.clj       set filetype=clojure
+:  au BufNewFile,BufRead *.go        set filetype=go
+:  au BufNewFile,BufRead *.less      set filetype=less
+:  au BufNewFile,BufRead *.json      set filetype=json
+:  au BufNewFile,BufRead *.md        set filetype=md
+:  au BufNewFile,BufRead *.mst       set filetype=mustache
+:  au BufNewFile,BufRead *.mustache  set filetype=mustache
 :  au BufNewFile,BufRead Jenkinsfile set filetype=groovy
 :  au BufNewFile,BufRead JenkinsFile set filetype=groovy
+:  au BufNewFile,BufRead Vagrantfile set filetype=ruby
 
-autocmd filetype python set tabstop=4
-autocmd filetype python set shiftwidth=4
+"Language specific considerations
+:  au BufNewFile,BufRead *.py        set shiftwidth=4
+:  au BufNewFile,BufRead *.py        set tabstop=4
 
 "Highlight trailing whitespace, tabs, and long lines.
 :  hi unwanted ctermbg=cyan guibg=cyan
