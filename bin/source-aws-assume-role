@@ -31,7 +31,7 @@ current_account_id=$(aws sts get-caller-identity --query Account --output text)
 ##
 # Targets/Arguments
 role=$1
-test -n "$target" || { echo "usage: assume-role <arn|role-name [account-id]>" >&2; exit 1; }
+test -n "$role" || { echo "usage: assume-role <arn|role-name [account-id]>" >&2; return 1; }
 
 account=$2
 test -n "$account" || account="$current_account_id"
