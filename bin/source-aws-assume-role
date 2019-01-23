@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+
+##
+# Script to easily assume an AWS IAM Role
+##
+
+set +e
+
+
+##
+# This script should be sourced only
+test "$0" = "-bash" || { echo "$0: script must be sourced" >&2; exit 1; }
+##
+
+
+##
+# Make sure to hide the output of the secrets that follow
+do_assume_xtrace=$(echo $SHELLOPTS | grep -o xtrace | cat)
+set +x
+oldhistfile="$HISTFILE"
+export HISTFILE=/dev/null
+##
+
+
+##
+# Current AWS Account ID
+current_account_id=$(aws sts get-caller-identity --query Account --output text)
+##
+
+
+##
+# Targets/Arguments
+role=$1
+test -n "$target" || { echo "usage: assume-role <arn|role-name [account-id]>" >&2; exit 1; }
+
+account=$2
+test -n "$account" || account="$current_account_id"
+
+echo $role | grep -q '^arn:aws:iam::' && arn=$role || arn="arn:aws:iam::$account:role/$role"
+##
+
+
+##
+# whoami?
+session_context="$(aws sts get-caller-identity --query Arn --output text | awk -F/ '{print $NF}')"
+##
+
+##
+# Session identifier
+session="$current_account_id-$session_context"
+##
+
+
+##
+# Assume role and parse credentials from reusulting blob, store in the environment
+json="$(aws sts assume-role --role-session-name "$session" --role-arn "$arn" --duration-seconds 3600 --output json)"
+export AWS_ACCESS_KEY_ID="$(echo "$json" | grep AccessKeyId | sed -e 's/^ *"AccessKeyId": "//' -e 's/",*.*$//')"
+export AWS_SECRET_ACCESS_KEY="$(echo "$json" | grep SecretAccessKey | sed -e 's/^ *"SecretAccessKey": "//' -e 's/",*.*$//')"
+export AWS_SECURITY_TOKEN="$(echo "$json" | grep SessionToken | sed -e 's/^ *"SessionToken": "//' -e 's/",*.*$//')"
+export AWS_SESSION_TOKEN="$AWS_SECURITY_TOKEN"
+##
+
+
+##
+# Restore output
+export HISTFILE="$oldhistfile"
+test -z "$do_assume_xtrace" || set -x
+##

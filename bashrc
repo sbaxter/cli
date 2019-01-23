@@ -139,6 +139,7 @@ alias ..4="cd ../../../.."
 alias ..5="cd ../../../../.."
 ! test type lynx >/dev/null 2>&1 || alias lynx="lynx -accept_all_cookies -vikeys"
 alias mfa="source source-aws-mfa"
+alias assume="source source-aws-assume-role"
 
 # aws regions
 for region in us-east-1 us-east-2 us-west-2 us-west-1 ap-northeast-1 \
