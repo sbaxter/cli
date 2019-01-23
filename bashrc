@@ -137,7 +137,7 @@ alias ..2="cd ../.."
 alias ..3="cd ../../.."
 alias ..4="cd ../../../.."
 alias ..5="cd ../../../../.."
-alias lynx="lynx -accept_all_cookies -vikeys"
+! test type lynx >/dev/null 2>&1 || alias lynx="lynx -accept_all_cookies -vikeys"
 alias mfa="source source-aws-mfa"
 
 # aws regions
