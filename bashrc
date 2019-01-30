@@ -237,8 +237,7 @@ function coco {
     test -z "$ORG"  || path="${ORG}/${path}"
     test -z "$REPO" || path="${REPO}/${path}"
 
-    git clone ssh://git-codecommit.$AWS_DEFAULT_REGION.amazonaws.com/v1/repos/$1 $path
-    cd $path
+    git clone ssh://git-codecommit.$AWS_DEFAULT_REGION.amazonaws.com/v1/repos/$2 $path && cd $path
   else
     local term
     test -n "$2" && term="$2" || term="$1"
