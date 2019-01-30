@@ -228,6 +228,24 @@ function gclone {
   git clone git@github.com:$1
   cd $(echo $1 | sed 's/^.*\///')
 }
+
+function coco {
+  if test "$1" = "clone"; then
+    test -n "$2" || { echo "coco clone: give me a repo to clone" >&2; return 1; }
+
+    local path="$2"
+    test -z "$ORG"  || path="${ORG}/${path}"
+    test -z "$REPO" || path="${REPO}/${path}"
+
+    git clone ssh://git-codecommit.$AWS_DEFAULT_REGION.amazonaws.com/v1/repos/$1 $path
+    cd $path
+  else
+    local term
+    test -n "$2" && term="$2" || term="$1"
+    local query="repositories[?contains(repositoryName,\`$term\`)][repositoryName]"
+    aws codecommit list-repositories --output text --query "$query"
+  fi
+}
 # -------------------------------------------------------------------------
 
 
