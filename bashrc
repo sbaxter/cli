@@ -137,7 +137,6 @@ alias ..2="cd ../.."
 alias ..3="cd ../../.."
 alias ..4="cd ../../../.."
 alias ..5="cd ../../../../.."
-! test type lynx >/dev/null 2>&1 || alias lynx="lynx -accept_all_cookies -vikeys"
 alias mfa="source source-aws-mfa"
 alias assume="source source-aws-assume-role"
 
@@ -499,5 +498,53 @@ function reassign {
   rm -f $1
   ln -s $2 $1
   ls -l $1
+}
+# -------------------------------------------------------------------------
+
+
+# URL ENCODE/DECODE
+# -------------------------------------------------------------------------
+function urlencode {
+    old_lc_collate=$LC_COLLATE
+    LC_COLLATE=C
+
+    local length="${#1}"
+    for (( i = 0; i < length; i++ )); do
+        local c="${1:i:1}"
+        case $c in
+            [a-zA-Z0-9.~_-]) printf "$c" ;;
+            *) printf '%%%02X' "'$c" ;;
+        esac
+    done
+
+    LC_COLLATE=$old_lc_collate
+}
+
+function urldecode {
+    local url_encoded="${1//+/ }"
+    printf '%b' "${url_encoded//%/\\x}"
+}
+# -------------------------------------------------------------------------
+
+
+# LYNX
+# -------------------------------------------------------------------------
+! type lynx >/dev/null 2>&1 || alias lynx="lynx -accept_all_cookies -vikeys"
+
+function google {
+  local args query search
+  args="$@"
+  test -z "$args" || query=$(urlencode "${args}")
+  test -z "$query" || search="search?q=${query}&oq=${query}"
+
+  lynx "https://www.google.com/${search}"
+}
+
+function wiki {
+  local args query wiki
+  args="$@"
+  test -z "$args" || query=$(urlencode "${args}")
+  test -z "$query" || wiki="wiki/${query}"
+  lynx "https://en.wikipedia.org/${wiki}"
 }
 # -------------------------------------------------------------------------
