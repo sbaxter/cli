@@ -458,6 +458,9 @@ if [ `uname -s` = 'Darwin' ]; then
   function pb {
     cat $1 | pbcopy
   }
+  function pbclear {
+    pbcopy < /dev/null
+  }
   alias pc="tr -d '\n' | pbcopy"
 fi
 # -------------------------------------------------------------------------
