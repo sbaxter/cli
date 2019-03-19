@@ -10,6 +10,14 @@
 *~
 *.sass-cache
 
+# Leiningen artifacts
+.lein-deps-sum
+.lein-repl-history
+.lein-plugins/
+.lein-failures
+.nrepl-port
+.eastwood
+
 # OS or Editor folders
 .DS_Store
 ._*

@@ -25,11 +25,12 @@ b=$(pwd -P)
 popd > /dev/null
 
 if [ $bak != false ]; then
-  for f in .bashrc .inputrc .psqlrc .vimrc .gitignore; do
+  for f in .bashrc .inputrc .psqlrc .vimrc .gitignore .lein/profiles.clj; do
     [ -f $HOME/$f ] && cp $HOME/$f $HOME/$f.$bak
   done
 fi
 
+mkdir -p $HOME/.lein
 { rm -f $HOME/.git-completion.bash; ln -s $b/git-completion.bash $HOME/.git-completion.bash; }
 { rm -f $HOME/.bashrc; ln -s $b/bashrc $HOME/.bashrc; }
 { rm -f $HOME/.inputrc; ln -s $b/inputrc $HOME/.inputrc; }
@@ -37,3 +38,4 @@ fi
 { rm -f $HOME/.vimrc; ln -s $b/vi/vimrc $HOME/.vimrc; }
 { rm -f $HOME/.hushlogin; ln -s $b/hushlogin $HOME/.hushlogin; }
 { rm -f $HOME/.gitignore; ln -s $b/.gitignore $HOME/.gitignore; }
+{ rm -f $HOME/.lein/profiles.clj; ln -s $b/profiles.clj $HOME/.lein/profiles.clj; }
