@@ -1,5 +1,5 @@
 {:user {:aliases      {"integration" ["do" "clean" ["uberjar"] ["with-profile" "+integration" "test"]]
-                       "lint"        ["do" "clean" ["kibit"] ["eastwood"] ["bikeshed"]]
+                       "lint"        ["do" "clean" ["kibit"] ["eastwood"] ["bikeshed" "-v"]]
                        "proj"        ["do" "clean" ["deps" ":tree"] ["ancient"]]
                        "uber"        ["do" "clean" ["deps" ":tree"] ["ancient"] ["kibit"] ["eastwood"] ["bikeshed"]]}
         :dependencies [[nrepl "0.6.0"]]
