@@ -508,6 +508,10 @@ if [ `uname -s` = 'Darwin' ]; then
   }
   alias pc="tr -d '\n' | pbcopy"
 fi
+
+function l80 {
+  grep --exclude-dir .git --recursive '.\{80\}' .
+}
 # -----------------------------------------------------------------------------
 
 
