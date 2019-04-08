@@ -601,7 +601,7 @@ function google {
 function wiki {
   local args query s wiki
   args="$@"
-  type gsed && s=gsed || s=sed
+  type gsed >/dev/null && s=gsed || s=sed
   test -z "$args" || args=$(echo "$args" | $s -e 's/\b\(.\)/\u\1/g' | tr ' ' _)
   test -z "$args" || query=$(urlencode "${args}")
   test -z "$query" || wiki="wiki/${query}"
