@@ -511,10 +511,10 @@ fi
 
 function l80 {
   local pattern=.
-  local recursive=
+  local recursive=--recursive
   if test -n "$1"; then
     pattern="$1"
-    recursive=--recursive
+    recursive=
   fi
   grep --exclude-dir .git --line-number $recursive '.\{80\}' $pattern
 }
