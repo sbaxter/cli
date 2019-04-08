@@ -510,7 +510,13 @@ if [ `uname -s` = 'Darwin' ]; then
 fi
 
 function l80 {
-  grep --exclude-dir .git --line-number --recursive '.\{80\}' .
+  local pattern=.
+  local recursive=
+  if test -n "$1"; then
+    pattern="$1"
+    recursive=--recursive
+  fi
+  grep --exclude-dir .git --line-number $recursive '.\{80\}' $pattern
 }
 # -----------------------------------------------------------------------------
 
