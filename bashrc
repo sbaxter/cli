@@ -510,7 +510,7 @@ if [ `uname -s` = 'Darwin' ]; then
 fi
 
 function l80 {
-  grep --exclude-dir .git --recursive '.\{80\}' .
+  grep --exclude-dir .git --line-number --recursive '.\{80\}' .
 }
 # -----------------------------------------------------------------------------
 
