@@ -202,6 +202,10 @@ function gu {
   echo "pulling from origin/$branch"
   git pull origin $branch
 }
+
+function gshow {
+  git log --pretty=format:"%h" --grep "$1" | xargs git show
+}
 # -----------------------------------------------------------------------------
 
 
