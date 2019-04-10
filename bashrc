@@ -524,6 +524,16 @@ if [ `uname -s` = 'Darwin' ]; then
   }
   alias pc="tr -d '\n' | pbcopy"
 fi
+
+function l80 {
+  local pattern=.
+  local recursive=--recursive
+  if test -n "$1"; then
+    pattern="$1"
+    recursive=
+  fi
+  grep --exclude-dir .git --line-number $recursive '.\{80\}' $pattern
+}
 # -----------------------------------------------------------------------------
 
 
@@ -607,7 +617,7 @@ function google {
 function wiki {
   local args query s wiki
   args="$@"
-  type gsed && s=gsed || s=sed
+  type gsed >/dev/null && s=gsed || s=sed
   test -z "$args" || args=$(echo "$args" | $s -e 's/\b\(.\)/\u\1/g' | tr ' ' _)
   test -z "$args" || query=$(urlencode "${args}")
   test -z "$query" || wiki="wiki/${query}"
