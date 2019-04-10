@@ -205,6 +205,22 @@ function gu {
 # -----------------------------------------------------------------------------
 
 
+# AWS ENV + PROMPT TAG
+# -----------------------------------------------------------------------------
+function set-aws-env {
+  local highlight id prefix secret
+  test -n "$1" && highlight=$1 || highlight=CYAN
+  prefix="$(echo $ORG | tr '[:lower:]' '[:upper:]' | tr '-' '_')"
+  id="${prefix}_AWS_ACCESS_KEY_ID"
+  secret="${prefix}_AWS_SECRET_ACCESS_KEY"
+  export AWS_ACCESS_KEY_ID="${!id}"
+  export AWS_SECRET_ACCESS_KEY="${!secret}"
+  export AWS_DEFAULT_REGION=us-east-1
+  export USER_TAG="(${!highlight}${ORG}${NO_COLOR}${PROMPT_COLOR})"
+}
+# -----------------------------------------------------------------------------
+
+
 # REPOS
 # -----------------------------------------------------------------------------
 function repo {
