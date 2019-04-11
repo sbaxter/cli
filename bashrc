@@ -127,27 +127,32 @@ PROMPT_COMMAND="_prompt"
 
 # ALIASES
 # -----------------------------------------------------------------------------
-alias rm='rm -i '
-alias cp='cp -i '
-alias mv='mv -i '
-alias ll="ls -l "
-alias lla="ls -al"
-alias vi="vim "
-alias grep="grep --color=auto"
-alias back="cd -"
-alias ..="cd .."
-alias ..2="cd ../.."
-alias ..3="cd ../../.."
-alias ..4="cd ../../../.."
-alias ..5="cd ../../../../.."
-alias mfa="source source-aws-mfa"
-alias assume="source source-aws-assume-role"
+function _alias {
+  alias $1 >/dev/null 2>&1
+  return
+}
+
+_alias ..     || alias ..='cd ..'
+_alias ..2    || alias ..2='cd ../..'
+_alias ..3    || alias ..3='cd ../../..'
+_alias ..4    || alias ..4='cd ../../../..'
+_alias ..5    || alias ..5='cd ../../../../..'
+_alias assume || alias assume='source source-aws-assume-role'
+_alias cp     || alias cp='cp -i'
+_alias grep   || alias grep='grep --color=auto'
+_alias ll     || alias ll='ls -l'
+_alias lla    || alias lla='ls -al'
+_alias mfa    || alias mfa='source source-aws-mfa'
+_alias mv     || alias mv='mv -i'
+_alias rm     || alias rm='rm -i'
+_alias vi     || alias vi=vim
+_alias back   || alias back='cd -'
 
 # aws regions
 for region in us-east-1 us-east-2 us-west-2 us-west-1 ap-northeast-1 \
 ap-northeast-2 ap-southeast-1 ap-southeast-2 eu-central-1 eu-west-1 \
 sa-east-1 ap-south-1; do
-  alias $region="export AWS_DEFAULT_REGION=$region"
+  _alias $region || alias $region="export AWS_DEFAULT_REGION=$region"
 done
 # -----------------------------------------------------------------------------
 
@@ -159,20 +164,21 @@ done
 test -f $HOME/.git-completion.bash && source $HOME/.git-completion.bash
 
 # aliases
-alias hist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
-alias gst='git status'
-alias ga='git add'
-alias gc='git commit'
-alias gca='git commit --amend'
-alias gpick='git cherry-pick -x'
-alias gd='git diff'
-alias gco='git checkout'
-alias gpr='git merge --no-ff'
-alias gpt='git push --tags'
-alias gr='git pull --rebase'
-alias grm='git rm'
-alias groot='cd $(git rev-parse --show-cdup) '
-alias gt='git tag -sam'
+_hist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
+_alias hist  || alias hist=$_hist
+_alias ga    || alias ga='git add'
+_alias gc    || alias gc='git commit'
+_alias gca   || alias gca='git commit --amend'
+_alias gco   || alias gco='git checkout'
+_alias gd    || alias gd='git diff'
+_alias gpick || alias gpick='git cherry-pick -x'
+_alias gpr   || alias gpr='git merge --no-ff'
+_alias gpt   || alias gpt='git push --tags'
+_alias gr    || alias gr='git pull --rebase'
+_alias grm   || alias grm='git rm'
+_alias groot || alias groot='cd $(git rev-parse --show-cdup) '
+_alias gst   || alias gst='git status'
+_alias gt    || alias gt='git tag -sam'
 
 function grb {
   git for-each-ref --sort=-committerdate refs/remotes/ \
@@ -248,7 +254,7 @@ function _repo_dir {
 }
 complete -F _repo_dir repo
 
-alias wip="cd $REPO/wip"
+_alias wip || alias wip="cd $REPO/wip"
 
 function towip {
   mv $1 $REPO/wip/.
@@ -526,7 +532,7 @@ if [ `uname -s` = 'Darwin' ]; then
   function pbclear {
     pbcopy < /dev/null
   }
-  alias pc="tr -d '\n' | pbcopy"
+  _alias pc || alias pc="tr -d '\n' | pbcopy"
 fi
 
 function l80 {
@@ -557,7 +563,7 @@ function owner {
 # FILE COMPRESSION
 # -----------------------------------------------------------------------------
 if hash gnutar 2>/dev/null; then
-  alias tar='gnutar'
+  _alias tar || alias tar=gnutar
 fi
 
 function addtotar {
@@ -607,7 +613,9 @@ function urldecode {
 
 # LYNX
 # -----------------------------------------------------------------------------
-! type lynx >/dev/null 2>&1 || alias lynx="lynx -accept_all_cookies -vikeys"
+if type lynx >/dev/null 2>&1; then
+  _alias lynx || alias lynx='lynx -accept_all_cookies -vikeys'
+fi
 
 function google {
   local args query search
