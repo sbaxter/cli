@@ -64,6 +64,8 @@ _bashrc="${BASH_SOURCE[0]}"
 [ -h "$_bashrc" ] && export PATH=$PATH:$(dirname $(readlink $_bashrc))/bin
 [ -h "$_bashrc" ] && export VI_CONFIG=$(dirname $(readlink $_bashrc))/vi
 
+PATH=$PATH:/usr/local/bin
+
 # cmd history
 export HISTCONTROL=erasedups:ignoreboth
 export HISTFILESIZE=500000
