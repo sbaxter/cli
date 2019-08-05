@@ -646,6 +646,17 @@ function wiki {
 # -----------------------------------------------------------------------------
 
 
+# PYTHON
+# -----------------------------------------------------------------------------
+function venv {
+  test -n "$1" && version=$1 || version=3.7
+  test -f venv/bin/activate || virtualenv -p python${version} venv
+  source venv/bin/activate
+  pip install --upgrade pip
+}
+# -----------------------------------------------------------------------------
+
+
 # GETOPT
 # -----------------------------------------------------------------------------
 ! test -f /usr/bin/getopt || export GNU_GETOPT=/usr/bin/getopt
