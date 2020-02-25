@@ -654,6 +654,7 @@ function venv {
   source venv/bin/activate
   pip install --upgrade pip setuptools pylint
   ! test -f setup.py || pip install -e .[dev]
+  ! test -f requirements.txt || pip -r requirements.txt
 }
 # -----------------------------------------------------------------------------
 
