@@ -38,6 +38,8 @@
 :  au BufNewFile,BufRead *.md        set filetype=md
 :  au BufNewFile,BufRead *.mst       set filetype=mustache
 :  au BufNewFile,BufRead *.mustache  set filetype=mustache
+:  au BufNewFile,BufRead *.svelte    set filetype=html
+:  au BufNewFile,BufRead *.ts        set filetype=javascript
 :  au BufNewFile,BufRead Jenkinsfile set filetype=groovy
 :  au BufNewFile,BufRead JenkinsFile set filetype=groovy
 :  au BufNewFile,BufRead Vagrantfile set filetype=ruby
