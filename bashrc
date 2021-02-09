@@ -64,7 +64,7 @@ _bashrc="${BASH_SOURCE[0]}"
 [ -h "$_bashrc" ] && export PATH=$PATH:$(dirname $(readlink $_bashrc))/bin
 [ -h "$_bashrc" ] && export VI_CONFIG=$(dirname $(readlink $_bashrc))/vi
 
-PATH=$PATH:/usr/local/bin
+PATH=$PATH:/usr/local/bin:/usr/local/sbin
 
 # cmd history
 export HISTCONTROL=erasedups:ignoreboth
@@ -154,7 +154,7 @@ _alias back   || alias back='cd -'
 for region in us-east-1 us-east-2 us-west-2 us-west-1 ap-northeast-1 \
 ap-northeast-2 ap-southeast-1 ap-southeast-2 eu-central-1 eu-west-1 \
 sa-east-1 ap-south-1; do
-  _alias $region || alias $region="export AWS_DEFAULT_REGION=$region"
+  _alias $region || alias $region="export AWS_DEFAULT_REGION=$region AWS_REGION=$region"
 done
 # -----------------------------------------------------------------------------
 
@@ -228,6 +228,7 @@ function set-aws-env {
   export AWS_ACCESS_KEY_ID="${!id}"
   export AWS_SECRET_ACCESS_KEY="${!secret}"
   export AWS_DEFAULT_REGION=us-east-1
+  export AWS_REGION=$AWS_DEFAULT_REGION
   export USER_TAG="(${!highlight}${ORG}${NO_COLOR}${PROMPT_COLOR})"
 }
 # -----------------------------------------------------------------------------
