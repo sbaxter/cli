@@ -153,7 +153,7 @@ _alias back   || alias back='cd -'
 # aws regions
 for region in us-east-1 us-east-2 us-west-2 us-west-1 ap-northeast-1 \
 ap-northeast-2 ap-southeast-1 ap-southeast-2 eu-central-1 eu-west-1 \
-sa-east-1 ap-south-1; do
+eu-west-2 sa-east-1 ap-south-1; do
   _alias $region || alias $region="export AWS_DEFAULT_REGION=$region AWS_REGION=$region"
 done
 # -----------------------------------------------------------------------------
@@ -227,6 +227,8 @@ function set-aws-env {
   secret="${prefix}_AWS_SECRET_ACCESS_KEY"
   export AWS_ACCESS_KEY_ID="${!id}"
   export AWS_SECRET_ACCESS_KEY="${!secret}"
+  export AWS_ACCESS_KEY="${!id}"
+  export AWS_SECRET_KEY="${!secret}"
   export AWS_DEFAULT_REGION=us-east-1
   export AWS_REGION=$AWS_DEFAULT_REGION
   export USER_TAG="(${!highlight}${ORG}${NO_COLOR}${PROMPT_COLOR})"
