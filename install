@@ -39,3 +39,5 @@ mkdir -p $HOME/.lein
 { rm -f $HOME/.hushlogin; ln -s $b/hushlogin $HOME/.hushlogin; }
 { rm -f $HOME/.gitignore; ln -s $b/.gitignore $HOME/.gitignore; }
 { rm -f $HOME/.lein/profiles.clj; ln -s $b/profiles.clj $HOME/.lein/profiles.clj; }
+{ test -d $HOME/.vim/colors && mv $HOME/.vim/colors $HOME/.vim/colors.bak; }
+{ rm -rf $HOME/.vim/colors; ln -s $b/vi/colors $HOME/.vim/colors; }
