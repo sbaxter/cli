@@ -1,24 +1,27 @@
 #!/bin/bash
 
-[ -z "$UPDATE_LIST" ] && { echo '$UPDATE_LIST is empty.' >&2; exit 1; }
+test -z "${DEBUG}" || set -x
 
-function _gbranch {
-  local sym=$(git symbolic-ref HEAD 2>/dev/null)
-  [ -z $sym ] && sym=$(git describe --contains --all HEAD)
-  [ -z $sym ] && sym=$(git rev-parse --short HEAD)
-  echo ${sym##refs/heads/}
-}
-
-function _safe_git_sync {
-  [ $(_gbranch) != "master" ] && echo "UNABLE TO UPDATE: not on master!" && return 1
-  git diff --no-ext-diff --quiet --exit-code \
-    && git pull --quiet origin master >/dev/null \
-    || echo "UNABLE TO UPDATE (DIRTY)"
-}
+: ${UPDATE_LIST:=}
 
 for d in $UPDATE_LIST; do
+  # test for git repo
+  test -d $d/.git || { echo "WARNING: $d is not a git repo" >&2; continue; }
   pushd "$d" > /dev/null
-  echo "Updating $d"
-  _safe_git_sync
+
+  git diff --no-ext-diff --quiet --exit-code \
+    || { echo "WARNING: unable to update $d: DIRTY" >&2; continue; }
+
+  # current branch
+  _branch=$(git symbolic-ref HEAD 2>/dev/null)
+  test -n "$_branch" || _branch=$(git describe --contains --all HEAD)
+  test -n "$_branch" || _branch=$(git rev-parse --short HEAD)
+  _branch=${_branch##refs/heads/}
+
+  case $_branch in
+    master)  git pull --quiet origin $_branch > /dev/null                   ;;
+    main)    git pull --quiet origin $_branch > /dev/null                   ;;
+    ?|*)     echo "WARNING: unable to update $d: not on main" >&2; continue ;;
+  esac
   popd > /dev/null
 done
