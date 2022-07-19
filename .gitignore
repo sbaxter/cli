@@ -27,12 +27,25 @@ Thumbs.db
 archive
 
 # idea
-.idea/caches/
-.idea/code.iml
-.idea/dictionaries/
-.idea/gradle.xml
-.idea/libraries/
-.idea/misc.xml
-.idea/modules.xml
-.idea/modules/
-.idea/workspace.xml
+*.iws
+.idea/**/caches
+.idea/**/code.iml
+.idea/**/misc.xml
+.idea/**/modules.xml
+.idea/**/modules
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+.idea/**/gradle.xml
+.idea/**/libraries
+.idea/**/dataSources
+.idea/**/dataSources.ids
+.idea/**/dataSources.local.xml
+.idea/**/sqlDataSources.xml
+.idea/**/dynamic.xml
+.idea/**/uiDesigner.xml
+.idea/**/dbnavigator.xml
+.idea/**/contentModel.xml
+cmake-build-*/
