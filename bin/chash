@@ -1,14 +1,50 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+set -e
+test -z "${DEBUG}" || set -x
+
+##
+# parameters
+: ${REPO:=~/repos}
+opts="Dhps"
+p=false
+function usage {
+  cat << _usage_
+  `basename $0`: copy commit sha to pasteboard
+
+  usage:
+    `basename $0` [-$opts] <repo>
+
+    D            - turn on debug mode (default: OFF).
+    h            - you are here.
+    p            - print to stdout (default: $p).
+    s            - short commit sha.
+_usage_
+}
 
 # Use pbcopy on Mac OSX; plain echo for linux
-[ `uname -s` = Darwin ] && cmd='pbcopy' || cmd='xargs echo'
+test $(uname -s) = Darwin && cmd='pbcopy' || cmd='xargs echo'
 
-[ -z $1 ] && { git rev-parse HEAD | tr -d '\n' | $cmd; exit; }
+while getopts $opts opt; do
+  case $opt in
+    D)   DEBUG=true; set -x                         ;;
+    h)   usage; exit                                ;;
+    p)   cmd='xargs echo'                           ;;
+    s)   short=--short                              ;;
+    ?|*) echo; usage; exit 5                        ;;
+  esac
+done
+shift $(($OPTIND-1))
+##
 
-[ -z $REPO ] && { echo '$REPO not set!' >&2; exit 1; }
 
-[ ! -d $REPO/$1 ] && { echo "$REPO/$1 not found!" >&2; exit 1; }
+if test -n "$1"; then
+  test -z "$ORG" || org=/$ORG
+  dir=$REPO${org}/$1
+  test -d $dir || { echo "$dir not found!" >&2; exit 1; }
+  context="-C $dir"
+fi
 
-pushd $REPO/$1 > /dev/null
-  git rev-parse HEAD | tr -d '\n' | $cmd
-popd > /dev/null
+sha=$(git $context rev-parse $short HEAD)
+
+echo -n $sha | $cmd
