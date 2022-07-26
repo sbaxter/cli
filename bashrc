@@ -113,15 +113,15 @@ function _gprompt {
   u=$([ -z $(git ls-files --others --exclude-standard -- ':/*') \
         >/dev/null 2>&1 ] || echo "?")
 
-  echo "[$branch$CYAN$w$i$u$PROMPT_COLOR]"
+  echo "[$branch\[$CYAN\]$w$i$u\[$PROMPT_COLOR\]]"
 }
 
 function _prompt {
   local depth=$(echo `pwd` | sed 's/[^/]//g' | sed 's/^\///')
   local b="$NO_COLOR$PROMPT_COLOR\n"
   local e="$ON_BLACK$NO_COLOR"
-  PS1="${b}$(_gprompt)$PROMPT_COLOR[$HOSTNAME$USER_TAG]:$depth\W]:$e "
-  PS2="   $PROMPT_COLOR->$NO_COLOR "
+  PS1="\[${b}\]$(_gprompt)\[$PROMPT_COLOR\][$HOSTNAME$USER_TAG:$depth\W]:\[$e\] "
+  PS2="   \[$PROMPT_COLOR\]->\[$NO_COLOR\] "
 }
 PROMPT_COMMAND="_prompt"
 # -----------------------------------------------------------------------------
@@ -231,7 +231,7 @@ function set-aws-env {
   export AWS_SECRET_KEY="${!secret}"
   export AWS_DEFAULT_REGION=us-east-1
   export AWS_REGION=$AWS_DEFAULT_REGION
-  export USER_TAG="(${!highlight}${ORG}${NO_COLOR}${PROMPT_COLOR})"
+  export USER_TAG="(\[${!highlight}\]${ORG}\[${NO_COLOR}${PROMPT_COLOR}\])"
 }
 # -----------------------------------------------------------------------------
 
