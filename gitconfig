@@ -22,3 +22,5 @@
   new = white
 [github]
   user = <USERNAME>
+[gpg]
+  program = gpg
