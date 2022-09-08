@@ -23,6 +23,7 @@
 :au! Syntax less source $VI_CONFIG/syntax/less.vim
 :au! Syntax md source $VI_CONFIG/syntax/md.vim
 :au! Syntax mustache source $VI_CONFIG/syntax/mustache.vim
+:au! Syntax jq source $VI_CONFIG/syntax/jq.vim
 
 
 "Begin autocommands
@@ -40,6 +41,7 @@
 :  au BufNewFile,BufRead *.mustache  set filetype=mustache
 :  au BufNewFile,BufRead *.svelte    set filetype=html
 :  au BufNewFile,BufRead *.ts        set filetype=javascript
+:  au BufNewFile,BufRead *.jq        set filetype=jq
 :  au BufNewFile,BufRead Jenkinsfile set filetype=groovy
 :  au BufNewFile,BufRead JenkinsFile set filetype=groovy
 :  au BufNewFile,BufRead Vagrantfile set filetype=ruby
