@@ -5,12 +5,18 @@ test -z "${DEBUG}" || set -x
 : ${UPDATE_LIST:=}
 
 for d in $UPDATE_LIST; do
+  hi="$(tput bold; tput setaf 7; tput setab 1;)"
+  warn="${hi}WARNING$(tput sgr0): unable to update ${d} >>>"
+  warnRepo="${warn} not a git repo."
+  warnBranch="${warn} not on main."
+  warnDirty="${warn} DIRTY."
+
   # test for git repo
-  test -d $d/.git || { echo "WARNING: $d is not a git repo" >&2; continue; }
+  test -d $d/.git || { echo -e $warnRepo >&2; continue; }
   pushd "$d" > /dev/null
 
   git diff --no-ext-diff --quiet --exit-code \
-    || { echo "WARNING: unable to update $d: DIRTY" >&2; continue; }
+    || { echo -e $warnDirty >&2; continue; }
 
   # current branch
   _branch=$(git symbolic-ref HEAD 2>/dev/null)
@@ -18,10 +24,11 @@ for d in $UPDATE_LIST; do
   test -n "$_branch" || _branch=$(git rev-parse --short HEAD)
   _branch=${_branch##refs/heads/}
 
+
   case $_branch in
-    master)  git pull --quiet origin $_branch > /dev/null                   ;;
-    main)    git pull --quiet origin $_branch > /dev/null                   ;;
-    ?|*)     echo "WARNING: unable to update $d: not on main" >&2; continue ;;
+    master)  git pull --quiet origin $_branch > /dev/null ;;
+    main)    git pull --quiet origin $_branch > /dev/null ;;
+    ?|*)     echo -e $warnBranch >&2; continue            ;;
   esac
   popd > /dev/null
 done
