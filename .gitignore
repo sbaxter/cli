@@ -48,4 +48,5 @@ archive
 .idea/**/uiDesigner.xml
 .idea/**/dbnavigator.xml
 .idea/**/contentModel.xml
+.idea/**/androidTestResultsUserPreferences.xml
 cmake-build-*/
