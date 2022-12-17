@@ -24,3 +24,8 @@
   user = <USERNAME>
 [gpg]
   program = gpg
+[url "git@github.com:"]
+  insteadOf = https://github.com/
+[credential "https://git-codecommit.us-east-1.amazonaws.com"]
+  helper = !aws codecommit credential-helper $@
+  UseHttpPath = true
