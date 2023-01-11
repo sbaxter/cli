@@ -667,7 +667,8 @@ function wiki {
 # PYTHON
 # -----------------------------------------------------------------------------
 function venv {
-  test -n "$1" && version=$1 || version=3.7
+  test -z "$REQUESTS_CA_BUNDLE" || unset REQUESTS_CA_BUNDLE
+  test -n "$1" && version=$1 || version=3.10
   test -f venv/bin/activate || virtualenv -p python${version} venv
   source venv/bin/activate
   pip install --upgrade pip setuptools pylint
