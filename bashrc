@@ -695,5 +695,7 @@ function venv {
 if test `uname -s` = 'Darwin'; then
   # Set PATH, MANPATH, etc., for Homebrew.
   eval "$(/opt/homebrew/bin/brew shellenv)"
+
+  alias brup="brew upgrade && brew cleanup"
 fi
 # -----------------------------------------------------------------------------
