@@ -667,13 +667,12 @@ function wiki {
 # PYTHON
 # -----------------------------------------------------------------------------
 function venv {
-  test -z "$REQUESTS_CA_BUNDLE" || unset REQUESTS_CA_BUNDLE
   test -n "$1" && version=$1 || version=3.10
   test -f venv/bin/activate || virtualenv -p python${version} venv
   source venv/bin/activate
-  pip install --upgrade pip setuptools pylint
-  ! test -f setup.py || pip install -e .[dev]
-  ! test -f requirements.txt || pip -r requirements.txt
+  pip3 install --upgrade pip setuptools pylint
+  ! test -f setup.py || pip3 install -e .[dev]
+  ! test -f requirements.txt || pip3 -r requirements.txt
 }
 # -----------------------------------------------------------------------------
 
