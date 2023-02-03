@@ -39,6 +39,7 @@
 :  au BufNewFile,BufRead *.md        set filetype=md
 :  au BufNewFile,BufRead *.mst       set filetype=mustache
 :  au BufNewFile,BufRead *.mustache  set filetype=mustache
+:  au BufNewFile,BufRead *.rs        set filetype=rust
 :  au BufNewFile,BufRead *.svelte    set filetype=html
 :  au BufNewFile,BufRead *.ts        set filetype=javascript
 :  au BufNewFile,BufRead *.jq        set filetype=jq
