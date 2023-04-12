@@ -37,6 +37,7 @@ mkdir -p $HOME/.lein
 { rm -f $HOME/.inputrc; ln -s $b/inputrc $HOME/.inputrc; }
 { rm -f $HOME/.psqlrc; ln -s $b/psqlrc $HOME/.psqlrc; }
 { rm -f $HOME/.vimrc; ln -s $b/vi/vimrc $HOME/.vimrc; }
+{ rm -f $HOME/.vimrc; ln -s $b/vi/vimrc $HOME/.ideavimrc; }
 { rm -f $HOME/.hushlogin; ln -s $b/hushlogin $HOME/.hushlogin; }
 { rm -f $HOME/.gitignore; ln -s $b/.gitignore $HOME/.gitignore; }
 { rm -f $HOME/.lein/profiles.clj; ln -s $b/profiles.clj $HOME/.lein/profiles.clj; }
