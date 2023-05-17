@@ -1,9 +1,12 @@
+#!/usr/bin/env bash
+# shellcheck disable=SC1091
+
 # If not running interactively, don't do anything
-[ -z "$PS1" ] && return
+test -z "$PS1" && return
 
 # Source global definitions
 test -f /etc/bashrc  && source /etc/bashrc
-test -f $HOME/.bash_private && source $HOME/.bash_private
+test -f "$HOME/.bash_private" && source "$HOME/.bash_private"
 
 # COLORS
 # -----------------------------------------------------------------------------
@@ -34,6 +37,10 @@ test -f $HOME/.bash_private && source $HOME/.bash_private
      ON_CYAN=$(tput setab 6)
     ON_WHITE=$(tput setab 7)
 
+export NO_COLOR BOLD BLACK RED GREEN YELLOW BLUE MAGENTA CYAN WHITE
+export B_RED B_BLUE B_MAGENTA B_CYAN B_WHITE B_GREEN B_YELLOW B_BLACK
+export ON_BLACK ON_RED ON_GREEN ON_YELLOW ON_BLUE ON_MAGENTA ON_CYAN ON_WHITE
+
 # Directory Colors
 export LS_COLORS='di=0;32'
 # -----------------------------------------------------------------------------
@@ -41,11 +48,11 @@ export LS_COLORS='di=0;32'
 
 # DEFAULTS (stick them in .bash_profile)
 # -----------------------------------------------------------------------------
-: ${PROMPT_COLOR:=$YELLOW}
-: ${ORG:=}
-: ${REPO:=~/repos}
-: ${WWW_HOME:=https://google.com}
-: ${USER_TAG:="($USER)"}
+: "${PROMPT_COLOR:=$YELLOW}"
+: "${ORG:=}"
+: "${REPO:=$HOME/repos}"
+: "${WWW_HOME:=https://google.com}"
+: "${USER_TAG:="($USER)"}"
 # -----------------------------------------------------------------------------
 
 
@@ -61,10 +68,12 @@ export GIT_EDITOR=$VISUAL
 
 # Add bin files to $PATH
 _bashrc="${BASH_SOURCE[0]}"
-[ -h "$_bashrc" ] && export PATH=$PATH:$(dirname $(readlink $_bashrc))/bin
-[ -h "$_bashrc" ] && export VI_CONFIG=$(dirname $(readlink $_bashrc))/vi
+test -h "$_bashrc" && link=$(dirname "$(readlink "$_bashrc")")/bin
+test -n "$link" && export PATH=$PATH:$link
+test -h "$_bashrc" && viconf=$(dirname "$(readlink "$_bashrc")")/vi
+test -z "$viconf" && export VI_CONFIG="$viconf"
 
-PATH=$PATH:/usr/local/bin:/usr/local/sbin
+export PATH=$PATH:/usr/local/bin:/usr/local/sbin
 
 # cmd history
 export HISTCONTROL=erasedups:ignoreboth
@@ -75,7 +84,7 @@ shopt -s histappend
 shopt -s cmdhist
 
 function reload {
-  source $HOME/.bashrc
+  source "$HOME/.bashrc"
 }
 
 function title {
@@ -91,14 +100,15 @@ function setclock {
 # PROMPT
 # -----------------------------------------------------------------------------
 function _gbranch {
-  local sym=$(git symbolic-ref HEAD 2>/dev/null)
-  [ -z $sym ] && sym=$(git describe --contains --all HEAD)
-  [ -z $sym ] && sym=$(git rev-parse --short HEAD)
-  echo ${sym##refs/heads/}
+  local sym
+  sym=$(git symbolic-ref HEAD 2>/dev/null)
+  test -z "$sym" && sym=$(git describe --contains --all HEAD)
+  test -z "$sym" && sym=$(git rev-parse --short HEAD)
+  echo "${sym##refs/heads/}"
 }
 
 function _gprompt {
-  local output branch w i u
+  local branch w i u
   git status >/dev/null 2>&1 || return;
 
   if git log >/dev/null 2>&1; then
@@ -110,16 +120,17 @@ function _gprompt {
   fi
 
   w=$(git diff --no-ext-diff --quiet --exit-code || echo "!")
-  u=$([ -z $(git ls-files --others --exclude-standard -- ':/*') \
-        >/dev/null 2>&1 ] || echo "?")
+  u="$(test -z "$(git ls-files --others --exclude-standard -- ':/*' \
+        >/dev/null 2>&1)" || echo "?")"
 
   echo "[$branch\[$CYAN\]$w$i$u\[$PROMPT_COLOR\]]"
 }
 
 function _prompt {
-  local depth=$(echo `pwd` | sed 's/[^/]//g' | sed 's/^\///')
-  local b="$NO_COLOR$PROMPT_COLOR\n"
-  local e="$ON_BLACK$NO_COLOR"
+  local depth b e
+  depth=$(pwd | sed 's/[^/]//g' | sed 's/^\///')
+  b="$NO_COLOR$PROMPT_COLOR\n"
+  e="$ON_BLACK$NO_COLOR"
   PS1="\[${b}\]$(_gprompt)\[$PROMPT_COLOR\][$HOSTNAME$USER_TAG:$depth\W]:\[$e\] "
   PS2="   \[$PROMPT_COLOR\]->\[$NO_COLOR\] "
 }
@@ -130,7 +141,7 @@ PROMPT_COMMAND="_prompt"
 # ALIASES
 # -----------------------------------------------------------------------------
 function _alias {
-  alias $1 >/dev/null 2>&1
+  alias "$1" >/dev/null 2>&1
   return
 }
 
@@ -149,6 +160,7 @@ _alias mv     || alias mv='mv -i'
 _alias rm     || alias rm='rm -i'
 _alias vi     || alias vi=vim
 _alias back   || alias back='cd -'
+_alias blint  || alias blint='shellcheck -s bash'
 
 # aws regions
 for region in \
@@ -169,6 +181,7 @@ for region in \
   us-east-2 \
   us-west-1 \
   us-west-2; do
+    # shellcheck disable=SC2139
     _alias $region || alias $region="export AWS_DEFAULT_REGION=$region AWS_REGION=$region"
 done
 # -----------------------------------------------------------------------------
@@ -178,11 +191,12 @@ done
 # -----------------------------------------------------------------------------
 
 # git completion
-test -f $HOME/.git-completion.bash && source $HOME/.git-completion.bash
+test -f "$HOME/.git-completion.bash" && source "$HOME/.git-completion.bash"
 
 # aliases
-_hist='git log --pretty=format:"%h %ad | %s%d [%an]" --graph --date=short'
-_alias hist  || alias hist=$_hist
+_hist="git log --pretty=format:'%h %ad | %s%d [%an]' --graph --date=short"
+# shellcheck disable=SC2139
+_alias hist  || alias hist="$_hist"
 _alias ga    || alias ga='git add'
 _alias gc    || alias gc='git commit'
 _alias gca   || alias gca='git commit --amend'
@@ -211,9 +225,9 @@ function gp {
   test -z "$1" || remote="$1"
 
   branch=$(git symbolic-ref HEAD 2>/dev/null)
-  [ -z $branch ] && echo "Detached state?" && return 1
+  test -z "$branch" && echo "Detached state?" && return 1
   echo "pushing to $remote/$branch"
-  git push $remote $branch
+  git push "$remote" "$branch"
 }
 
 function gu {
@@ -221,9 +235,9 @@ function gu {
   git status >/dev/null 2>&1 || return;
 
   branch=$(git symbolic-ref HEAD 2>/dev/null)
-  [ -z $branch ] && echo "Detached state?" && return 1
+  test -z "$branch" && echo "Detached state?" && return 1
   echo "pulling from origin/$branch"
-  git pull origin $branch
+  git pull origin "$branch"
 }
 
 function gshow {
@@ -236,8 +250,8 @@ function gshow {
 # -----------------------------------------------------------------------------
 function set-aws-env {
   local highlight id prefix secret
-  test -n "$1" && highlight=$1 || highlight=CYAN
-  prefix="$(echo $ORG | tr '[:lower:]' '[:upper:]' | tr '-' '_')"
+  test -n "$1" && highlight="$1" || highlight=CYAN
+  prefix="$(echo "$ORG" | tr '[:lower:]' '[:upper:]' | tr '-' '_')"
   id="${prefix}_AWS_ACCESS_KEY_ID"
   secret="${prefix}_AWS_SECRET_ACCESS_KEY"
   export AWS_ACCESS_KEY_ID="${!id}"
@@ -254,37 +268,44 @@ function set-aws-env {
 # REPOS
 # -----------------------------------------------------------------------------
 function repo {
-  [ -z "$ORG" ] && cd $REPO/$1 || cd $REPO/$ORG/$1
+  if test -z "$ORG"; then
+    cd "$REPO/$1" || return
+  else
+    cd "$REPO/$ORG/$1" || return
+  fi
 }
 
 # auto-complete for repo
 function _repo_dir {
   local cur=${COMP_WORDS[COMP_CWORD]}
   local prev=${COMP_WORDS[COMP_CWORD-1]}
-  if [ $COMP_CWORD -eq 1 ]; then
+  if test "$COMP_CWORD" -eq 1; then
+      # shellcheck disable=SC2207
       COMPREPLY=( $( compgen -W "$(cd "$REPO/$ORG" \
         && find . -mindepth 1 -maxdepth 1 -type d \
-              -exec basename {} \;)" -- $cur ) )
-  elif [ $COMP_CWORD -eq 2 ]; then
+              -exec basename {} \;)" -- "$cur" ) )
+  elif test "$COMP_CWORD" -eq 2; then
+      # shellcheck disable=SC2207
       COMPREPLY=( $( compgen -W "$(cd "$REPO/$ORG/$prev" \
         && find . -mindepth 1 -maxdepth 1 -type d \
-              -exec basename {} \;)" -- $cur ) )
+              -exec basename {} \;)" -- "$cur" ) )
   fi
   return 0
 }
 complete -F _repo_dir repo
 
+# shellcheck disable=SC2139
 _alias wip || alias wip="cd $REPO/wip"
 
 function towip {
-  mv $1 $REPO/wip/.
+  mv "$1" "$REPO/wip/."
 }
 
 function gclone {
-  [ -z $1 ] && echo "give me a repo to clone" && return
-  cd $REPO
-  git clone git@github.com:$1
-  cd $(echo $1 | sed 's/^.*\///')
+  test -z "$1" && echo "give me a repo to clone" && return
+  cd "$REPO" || return
+  git clone "git@github.com:$1"
+  cd "$(echo "$1" | sed 's/^.*\///')" || return
 }
 
 function coco {
@@ -296,9 +317,9 @@ function coco {
     test -z "$REPO" || path="${REPO}/${path}"
 
     git clone \
-      ssh://git-codecommit.$AWS_DEFAULT_REGION.amazonaws.com/v1/repos/$2 \
-        $path \
-      && cd $path
+      "ssh://git-codecommit.$AWS_DEFAULT_REGION.amazonaws.com/v1/repos/$2" \
+        "$path" \
+      && cd "$path" || return
   else
     local term
     test -n "$2" && term="$2" || term="$1"
@@ -312,13 +333,13 @@ function coco {
 # EMACS
 # -----------------------------------------------------------------------------
 function e {
-  [[ -z $1 || -d $1 ]] && echo "slow down!" && return 1
+  { test -z "$1" || test -d "$1"; } && echo "slow down!" && return 1
 
-  [[ ! -f $1 ]] && echo -n "create? (y/N) " && read c
+  ! test -f "$1" && echo -n "create? (y/N) " && read -r c
 
-  [[ -n "$c" && "$c" = "y" ]] && touch $1
+  test -n "$c" && test "$c" = "y" && touch "$1"
 
-  [[ -f $1 ]] && emacs $1 || return 1
+  test -f "$1" && emacs "$1" || return 1
 }
 # -----------------------------------------------------------------------------
 
@@ -326,7 +347,7 @@ function e {
 # GPG
 # -----------------------------------------------------------------------------
 function encryptfilefor {
-  gpg -a --encrypt --recipient $1 < $2 > $2.gpg
+  gpg -a --encrypt --recipient "$1" < "$2" > "$2.gpg"
 }
 
 function sign {
@@ -337,30 +358,32 @@ function sign {
 
 # PROCESS/PKG MGMT
 # -----------------------------------------------------------------------------
-if [ `uname -s` != 'Darwin' ]; then
+if test "$(uname -s)" != Darwin; then
   function start {
-    /etc/init.d/$1 start
+    "/etc/init.d/${1}" start
   }
 
   function restart {
-    /etc/init.d/$1 restart
+    "/etc/init.d/${1}" restart
   }
 
   function stop {
-    /etc/init.d/$1 stop
+    "/etc/init.d/${1}" stop
   }
 
   function isinstalled {
-    rpm -qa | grep -i $1
+    rpm -qa | grep -i "$1"
   }
 fi
 
 function isrunning {
-  ps -ef | grep -i $1 | grep -v grep
+  #shellcheck disable=SC2009
+  ps -ef | grep -i "$1" | grep -v grep
 }
 
 function wpid {
-  ps -ef | grep -i $1 | grep -v grep | awk '{print $2}'
+  #shellcheck disable=SC2009
+  ps -ef | grep -i "$1" | grep -v grep | awk '{print $2}'
 }
 
 # -----------------------------------------------------------------------------
@@ -369,78 +392,78 @@ function wpid {
 # SED
 # -----------------------------------------------------------------------------
 function dedup {
-  sed -i '$!N; /^\(.*\)\n\1$/!P; D' $1
+  sed -i '$!N; /^\(.*\)\n\1$/!P; D' "$1"
 }
 
 function upcase {
-  sed -i 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/' $1
+  sed -i 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/' "$1"
 }
 
 function downcase {
-  sed -i 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' $1
+  sed -i 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' "$1"
 }
 
 function unDOS {
-  sed -i 's/.$//' $1
+  sed -i 's/.$//' "$1"
 }
 
 function noextraspaces {
-  sed -i 's/^[ \t]*//;s/[ \t]*$//' $1
+  sed -i 's/^[ \t]*//;s/[ \t]*$//' "$1"
 }
 
 function notrailinglines {
-  sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' $1
+  sed -i -e :a -e '/^\n*$/{$d;N;ba' -e '}' "$1"
 }
 
 function noHTML {
-  sed -i -e :a -e 's/<[^>]*>//g;/</N;//ba' $1
+  sed -i -e :a -e 's/<[^>]*>//g;/</N;//ba' "$1"
 }
 
 function trailingspaces {
-  sed -i '' -e's/[ \t]*$//' $1
+  sed -i '' -e's/[ \t]*$//' "$1"
 }
 
 function doublespace {
-  sed -i 'G' $1
+  sed -i 'G' "$1"
 }
 
 function safedoublespace {
-  sed -i '/^$/d;G' $1
+  sed -i '/^$/d;G' "$1"
 }
 
 function singlespace {
-  sed -i 'n;d' $1
+  sed -i 'n;d' "$1"
 }
 
 function blanklinebefore {
-  sed -i "/$1/{x;p;x;}" $2
+  sed -i "/$1/{x;p;x;}" "$2"
 }
 
 function blanklineafter {
-  sed -i "/$1/G" $2
+  sed -i "/$1/G" "$2"
 }
 
 function reverseline {
-  sed -i '/\n/!G;s/\(.\)\(.*\n\)/&\2\1/;//D;s/.//' $1
+  sed -i '/\n/!G;s/\(.\)\(.*\n\)/&\2\1/;//D;s/.//' "$1"
 }
 
 function appendlines {
-  sed -e :a -e -i '/\\$/N; s/\\\n//; ta' $1
+  sed -e :a -e -i '/\\$/N; s/\\\n//; ta' "$1"
 }
 # -----------------------------------------------------------------------------
 
 
 # PORTS
 # -----------------------------------------------------------------------------
-if [ `uname -s` != 'Darwin' ]; then
+if test "$(uname -s)" != Darwin; then
   function specificcloseport {
     iptables --delete INPUT \
              --protocol tcp \
              --match state \
              --state NEW \
              --match tcp \
-             --dport $1 \
-             --source $2 \
+             --dport "$1" \
+             --source "$2" \
              --jump ACCEPT
   }
 
@@ -449,8 +472,8 @@ if [ `uname -s` != 'Darwin' ]; then
              --protocol tcp \
              --match state --state NEW \
              --match tcp \
-             --dport $1 \
-             --source $2 \
+             --dport "$1" \
+             --source "$2" \
              --jump ACCEPT
   }
 
@@ -460,7 +483,7 @@ if [ `uname -s` != 'Darwin' ]; then
              --match state \
              --state NEW \
              --match tcp \
-             --dport $1 \
+             --dport "$1" \
              --jump ACCEPT
   }
 
@@ -470,7 +493,7 @@ if [ `uname -s` != 'Darwin' ]; then
              --match state \
              --state NEW \
              --match tcp \
-             --dport $1 \
+             --dport "$1" \
              --jump ACCEPT
   }
 fi
@@ -503,51 +526,52 @@ function externalip {
 # DIRECTORY AND FILE
 # -----------------------------------------------------------------------------
 function lookat {
-  vim -R $1
+  vim -R "$1"
 }
 
 function follow {
-  cat $1 && tail -f -n0 $1
+  cat "$1" && tail -f -n0 "$1"
 }
 
 function findtextinfiles {
-  find . -name "$1" | xargs grep -n "$2"
+  find . -name "$1" -exec "grep" -n "$2" {} \;
 }
 
 function linecount {
-  cat "$1" | grep -c $
+  grep -c $ "$1"
 }
 
 function ldir {
+  #shellcheck disable=SC2010
   ls -l | grep ^d
 }
 
 function unspacefilenames {
-  if [ -z "$1" ]; then
-    for f in *; do mv "$f" `echo $f | tr ' ' '_'`; done
+  if test -z "$1"; then
+    for f in *; do mv "$f" "$(echo "$f" | tr ' ' '_')"; done
   else
-    mv "$1" `echo "$1" | tr ' ' '_'`
+    mv "$1" "$(echo "$1" | tr ' ' '_')"
   fi
 }
 
 function clonedirsfrom {
-  (cd $1; find -type d ! -name .) | xargs mkdir
+  (cd "$1" || return; find ./ -type d ! -name .) | xargs mkdir
 }
 
 function copythisdirto {
-  cp -r -p -P -u * $1
+  cp -r -p -P -u ./* "$1"
 }
 
 function howbigis {
-  [ -z "$1" ] && echo "no file specified" && return;
-  [ ! -f "$1" ] && echo "$1 not found" && return;
+  test -z "$1" && echo "no file specified" && return;
+  ! test -f "$1" && echo "$1 not found" && return;
 
-  ls -lah "$1" | awk '{print $5}'
+  du -sh "$1" | awk '{print $1}'
 }
 
-if [ `uname -s` = 'Darwin' ]; then
+if test "$(uname -s)" = Darwin; then
   function pb {
-    cat $1 | pbcopy
+    pbcopy < "$1"
   }
   function pbclear {
     pbcopy < /dev/null
@@ -562,7 +586,7 @@ function l80 {
     pattern="$1"
     recursive=
   fi
-  grep --exclude-dir .git --line-number $recursive '.\{80\}' $pattern
+  grep --exclude-dir .git --line-number $recursive '.\{80\}' "$pattern"
 }
 # -----------------------------------------------------------------------------
 
@@ -570,12 +594,12 @@ function l80 {
 # FILE PERMISSIONS
 # -----------------------------------------------------------------------------
 function my {
-  chown `whoami`:`whoami` $1
+  chown "$(whoami)":"$(whoami)" "$1"
 }
 
 function owner {
-  chown -R $1 *
-  chgrp -R $1 *
+  chown -R "$1" ./*
+  chgrp -R "$1" ./*
 }
 # -----------------------------------------------------------------------------
 
@@ -587,7 +611,7 @@ if hash gnutar 2>/dev/null; then
 fi
 
 function addtotar {
-  tar -rf $1 $2
+  tar -rf "$1" "$2"
 }
 # -----------------------------------------------------------------------------
 
@@ -595,13 +619,13 @@ function addtotar {
 # SYM LINK
 # -----------------------------------------------------------------------------
 function reassign {
-  [ ! -L $1 ] && { echo "$1 is not a symbolic link."; return 1; }
-  [ ! -e $2 ] && { touch $2; echo "created empty file named $2"; }
-  [ ! -e $2 ] && { echo "unable to create $2"; return 1; }
+  ! test -L "$1" && { echo "$1 is not a symbolic link."; return 1; }
+  ! test -e "$2" && { touch "$2"; echo "created empty file named $2"; }
+  ! test -e "$2" && { echo "unable to create $2"; return 1; }
 
-  rm -f $1
-  ln -s $2 $1
-  ls -l $1
+  rm -f "$1"
+  ln -s "$2" "$1"
+  ls -l "$1"
 }
 # -----------------------------------------------------------------------------
 
@@ -616,7 +640,7 @@ function urlencode {
     for (( i = 0; i < length; i++ )); do
         local c="${1:i:1}"
         case $c in
-            [a-zA-Z0-9.~_-]) printf "$c" ;;
+            [a-zA-Z0-9.~_-]) printf "%c" "$c" ;;
             *) printf '%%%02X' "'$c" ;;
         esac
     done
@@ -639,7 +663,7 @@ fi
 
 function google {
   local args query search
-  args="$@"
+  args="$*"
   test -z "$args" || query=$(urlencode "${args}")
   test -z "$query" || search="search?q=${query}&oq=${query}"
 
@@ -648,8 +672,8 @@ function google {
 
 function wiki {
   local args query s wiki
-  args="$@"
-  type gsed >/dev/null && s=gsed || s=sed
+  args="$*"
+  type gsed >/dev/null && s="gsed" || s="sed"
   test -z "$args" || args=$(echo "$args" | $s -e 's/\b\(.\)/\u\1/g' | tr ' ' _)
   test -z "$args" || query=$(urlencode "${args}")
   test -z "$query" || wiki="wiki/${query}"
@@ -660,7 +684,8 @@ function wiki {
 
 # JAVA
 # -----------------------------------------------------------------------------
-! test -f /usr/libexec/java_home || export JAVA_HOME=$(/usr/libexec/java_home)
+! test -f /usr/libexec/java_home || JAVA_HOME=$(/usr/libexec/java_home)
+export JAVA_HOME
 # -----------------------------------------------------------------------------
 
 
@@ -668,7 +693,7 @@ function wiki {
 # -----------------------------------------------------------------------------
 function venv {
   test -n "$1" && version=$1 || version=3.10
-  test -f venv/bin/activate || virtualenv -p python${version} venv
+  test -f venv/bin/activate || virtualenv -p "python${version}" venv
   source venv/bin/activate
   pip3 install --upgrade pip setuptools pylint
   ! test -f setup.py || pip3 install -e .[dev]
@@ -685,7 +710,7 @@ function venv {
 
 # HOMEBREW
 # -----------------------------------------------------------------------------
-if test `uname -s` = 'Darwin'; then
+if test "$(uname -s)" = Darwin; then
   # Set PATH, MANPATH, etc., for Homebrew.
   brew=/opt/homebrew/bin/brew
   test -x $brew || brew=/usr/local/bin/brew

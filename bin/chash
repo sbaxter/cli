@@ -5,15 +5,15 @@ test -z "${DEBUG}" || set -x
 
 ##
 # parameters
-: ${REPO:=~/repos}
+: "${REPO:=$HOME/repos}"
 opts="Dhps"
 p=false
 function usage {
   cat << _usage_
-  `basename $0`: copy commit sha to pasteboard
+  $(basename "$0"): copy commit sha to pasteboard
 
   usage:
-    `basename $0` [-$opts] <repo>
+    $(basename "$0") [-$opts] <repo>
 
     D            - turn on debug mode (default: OFF).
     h            - you are here.
@@ -23,7 +23,7 @@ _usage_
 }
 
 # Use pbcopy on Mac OSX; plain echo for linux
-test $(uname -s) = Darwin && cmd='pbcopy' || cmd='xargs echo'
+test "$(uname -s)" = Darwin && cmd='pbcopy' || cmd='xargs echo'
 
 while getopts $opts opt; do
   case $opt in
@@ -34,17 +34,17 @@ while getopts $opts opt; do
     ?|*) echo; usage; exit 5                        ;;
   esac
 done
-shift $(($OPTIND-1))
+shift $((OPTIND-1))
 ##
 
 
 if test -n "$1"; then
   test -z "$ORG" || org=/$ORG
   dir=$REPO${org}/$1
-  test -d $dir || { echo "$dir not found!" >&2; exit 1; }
+  test -d "$dir" || { echo "$dir not found!" >&2; exit 1; }
   context="-C $dir"
 fi
 
-sha=$(git $context rev-parse $short HEAD)
+sha=$(git "$context" rev-parse "$short" HEAD)
 
-echo -n $sha | $cmd
+echo -n "$sha" | $cmd
