@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 opts=hdes:
 divider=false
@@ -7,10 +7,10 @@ seconds=5
 
 function _usage {
   cat << _USAGE_
-  `basename $0`: repeat a command ad infinitum
+  $(basename "$0"): repeat a command ad infinitum
 
   Usage:
-    `basename $0` [hdes] <command...>
+    $(basename "$0") [hdes] <command...>
 
   Options:
     -h           you are here.
@@ -30,20 +30,20 @@ while getopts $opts opt; do
   esac
 done
 
-shift $(($OPTIND-1))
+shift $((OPTIND-1))
 
-[[ -z "$@" ]] && { echo "supply a command to loop" >&2; exit 1; }
+test -n "$*" || { echo "supply a command to loop" >&2; exit 1; }
 
-echo "looping { $@; } every $seconds seconds; CTRL+C to quit."
+echo "looping { $*; } every $seconds seconds; CTRL+C to quit."
 
 while :
 do
-  { $@; }
+  { "$@"; }
   code=$?
 
-  $exit_on_error && { [ $code = 0 ] || break; }
+  $exit_on_error && { test $code = 0 || break; }
 
-  sleep $seconds
+  sleep "$seconds"
 
   $divider && echo "-----"
 done

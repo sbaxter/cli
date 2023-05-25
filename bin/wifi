@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-[ `uname -s` != 'Darwin' ] && { echo "MacOSX only!" >&2; exit 1; }
+test "$(uname -s)" = Darwin || { echo "MacOSX only!" >&2; exit 1; }
 
-[ -z $1 ] && toggle=on || toggle=$1
+test -z "$1" && toggle=on || toggle="$1"
 
-networksetup -setairportpower airport $toggle
+networksetup -setairportpower airport "$toggle"

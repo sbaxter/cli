@@ -1,7 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-test $(uname -s) = Darwin && dcmd=gdate || dcmd=date
-type $dcmd >/dev/null 2>&1 || { echo "FATAL: GNU Date not installed" >&2; exit 1; }
+# shellcheck disable=SC2209
+test "$(uname -s)" = Darwin && dcmd=gdate || dcmd=date
+type "$dcmd" >/dev/null 2>&1 || { echo "FATAL: GNU Date not installed" >&2; exit 1; }
 
 fmt=%s
 qual=day
@@ -11,19 +12,24 @@ while getopts f opt ; do
     ?|*) exit 2 ;;
   esac
 done
-shift $(($OPTIND-1))
+shift $((OPTIND-1))
 
 logfile="$HOME/.logs/last_$1_run.log"
 d=$($dcmd +$fmt)
 y=$($dcmd --date="1 $qual ago" +$fmt)
 
 function x {
-  if test ! -e $logfile; then
-    mkdir -p $HOME/.logs
-    $@ && echo $y > $logfile
-  elif test $(cat $logfile) -lt $y; then
-    $@ && echo $d > $logfile
+  if test ! -e "$logfile"; then
+    mkdir -p "$HOME/.logs"
+    "$@" && echo "$y" > "$logfile"
+  elif test "$(cat "$logfile")" -lt "$y"; then
+    "$@" && echo "$d" > "$logfile"
   fi
 }
 
-type $1 > /dev/null 2>&1 && x $@ || { echo "$1 is not available." >&2; exit 1; }
+if type "$1" >/dev/null 2>&1; then
+  x "$@"
+else
+  echo "$1 is not available." >&2
+  exit 1
+fi

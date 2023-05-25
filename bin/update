@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 test -z "${DEBUG}" || set -x
 
-: ${UPDATE_LIST:=}
+: "${UPDATE_LIST:=}"
 
 for d in $UPDATE_LIST; do
   hi="$(tput bold; tput setaf 7; tput setab 1;)"
@@ -12,11 +12,11 @@ for d in $UPDATE_LIST; do
   warnDirty="${warn} DIRTY."
 
   # test for git repo
-  test -d $d/.git || { echo -e $warnRepo >&2; continue; }
-  pushd "$d" > /dev/null
+  test -d "$d/.git" || { echo -e "$warnRepo" >&2; continue; }
+  pushd "$d" > /dev/null || exit
 
   git diff --no-ext-diff --quiet --exit-code \
-    || { echo -e $warnDirty >&2; continue; }
+    || { echo -e "$warnDirty" >&2; continue; }
 
   # current branch
   _branch=$(git symbolic-ref HEAD 2>/dev/null)
@@ -26,9 +26,9 @@ for d in $UPDATE_LIST; do
 
 
   case $_branch in
-    master)  git pull --quiet origin $_branch > /dev/null ;;
-    main)    git pull --quiet origin $_branch > /dev/null ;;
-    ?|*)     echo -e $warnBranch >&2; continue            ;;
+    master)  git pull --quiet origin "$_branch" > /dev/null ;;
+    main)    git pull --quiet origin "$_branch" > /dev/null ;;
+    ?|*)     echo -e "$warnBranch" >&2; continue            ;;
   esac
-  popd > /dev/null
+  popd > /dev/null || exit
 done

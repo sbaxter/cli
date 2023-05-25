@@ -6,10 +6,10 @@ len=16
 
 function _usage {
   cat << _USAGE_
-  `basename $0`: quickly generate a temporary password for someone
+  $(basename "$0"): quickly generate a temporary password for someone
 
   Usage:
-    `basename $0` [-$opts]
+    $(basename "$0") [-$opts]
 
   Options:
     -h          help (you are here)
@@ -27,8 +27,8 @@ while getopts $opts opt; do
   esac
 done
 
-shift $(($OPTIND-1))
+shift $((OPTIND-1))
 
 export LC_CTYPE=C
 
-< /dev/urandom tr -dc $chars | head -c${1:-$len};
+< /dev/urandom tr -dc "$chars" | head -c"${1:-$len}"

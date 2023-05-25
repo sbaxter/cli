@@ -1,7 +1,10 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-[ `uname -s` != 'Darwin' ] && { echo "MacOSX only!" >&2; exit 1; }
+test "$(uname -s)" = Darwin || { echo "MacOSX only!" >&2; exit 1; }
 
-c=`ifconfig -a inet 2>/dev/null | sed -n -e '/127.0.0.1/d' -e '/0.0.0.0/d' -e '/inet/p' | grep -c $`
+c="$(ifconfig -a inet 2>/dev/null \
+      | sed -n -e /127.0.0.1/d -e /0.0.0.0/d -e /inet/p \
+      | grep -c $)"
 
-[ $c = 0 ] && { echo "not connected"; exit 1; } || { echo "connected"; exit 0; }
+# shellcheck disable=SC2015
+test "$c" = 0 && { echo "not connected"; exit 1; } || { echo "connected"; exit 0; }

@@ -1,22 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
-[ -z $S3_BACKUP_BUCKET ] && { echo "S3_BACKUP_BUCKET not defined." >&2; exit 1; }
-[ -z "$BACKUP_LIST" ] && { echo '$BACKUP_LIST is empty.' >&2; exit 1; }
+test -n "$S3_BACKUP_BUCKET" || { echo "S3_BACKUP_BUCKET not defined." >&2; exit 1; }
+test -n "$BACKUP_LIST" || { echo "$BACKUP_LIST is empty." >&2; exit 1; }
 
-s3path=s3://$S3_BACKUP_BUCKET/backups/$HOSTNAME
-staging=$HOME/.backup
-mkdir -p $staging/.ssh
+s3path="s3://$S3_BACKUP_BUCKET/backups/$HOSTNAME"
+staging="$HOME/.backup"
+mkdir -p "$staging/.ssh"
 
 for x in $BACKUP_LIST; do
-  f=$(basename $x)
-  [ -e $staging/$f ] || ln -s $x $staging/$f
+  f=$(basename "$x")
+  test -e "$staging/$f" || ln -s "$x" "$staging/$f"
 done
 
-[ -e $staging/.ssh/config ] || ln -s $HOME/.ssh/config $staging/.ssh/config
+test -e "$staging/.ssh/config" || ln -s "$HOME/.ssh/config" "$staging/.ssh/config"
 
-[ `uname -s` = 'Darwin' ] && brew list > $staging/brewlist.txt
+test "$(uname -s)" = Darwin && brew list > "$staging/brewlist.txt"
 
-date +%F.%H%M > $staging/latest.txt
+date +%F.%H%M > "$staging/latest.txt"
 
-aws s3 sync --follow-symlinks $staging $s3path
+aws s3 sync --follow-symlinks "$staging" "$s3path"
