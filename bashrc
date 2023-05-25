@@ -71,7 +71,7 @@ _bashrc="${BASH_SOURCE[0]}"
 test -h "$_bashrc" && link=$(dirname "$(readlink "$_bashrc")")/bin
 test -n "$link" && export PATH=$PATH:$link
 test -h "$_bashrc" && viconf=$(dirname "$(readlink "$_bashrc")")/vi
-test -z "$viconf" && export VI_CONFIG="$viconf"
+test -z "$viconf" || export VI_CONFIG="$viconf"
 
 export PATH=$PATH:/usr/local/bin:/usr/local/sbin
 
