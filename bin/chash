@@ -8,6 +8,7 @@ test -z "${DEBUG}" || set -x
 : "${REPO:=$HOME/repos}"
 opts="Dhps"
 p=false
+doShort=false
 function usage {
   cat << _usage_
   $(basename "$0"): copy commit sha to pasteboard
@@ -30,7 +31,7 @@ while getopts $opts opt; do
     D)   DEBUG=true; set -x                         ;;
     h)   usage; exit                                ;;
     p)   cmd='xargs echo'                           ;;
-    s)   short=--short                              ;;
+    s)   doShort=true                               ;;
     ?|*) echo; usage; exit 5                        ;;
   esac
 done
@@ -42,9 +43,14 @@ if test -n "$1"; then
   test -z "$ORG" || org=/$ORG
   dir=$REPO${org}/$1
   test -d "$dir" || { echo "$dir not found!" >&2; exit 1; }
-  context="-C $dir"
+  context="$dir"
 fi
 
-sha=$(git "$context" rev-parse "$short" HEAD)
+if $doShort; then
+  sha="$(git -C "$context" rev-parse --short HEAD)"
+else
+  sha="$(git -C "$context" rev-parse HEAD)"
+fi
+
 
 echo -n "$sha" | $cmd
