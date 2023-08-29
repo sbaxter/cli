@@ -4,8 +4,8 @@
                            "omni"        ["do" "clean" ["deps" ":tree"] ["ancient"] ["kibit"] ["eastwood"] ["bikeshed"]]}
             :dependencies [[nrepl "1.0.0"]]
             :jvm-opts     ["-Dapple.awt.UIElement=true"]
-            :plugins      [[cider/cider-nrepl "0.30.0"]
-                           [jonase/eastwood "1.3.0"]
+            :plugins      [[cider/cider-nrepl "0.37.0"]
+                           [jonase/eastwood "1.4.0"]
                            [lein-ancient "0.7.0"]
                            [lein-bikeshed "0.5.2"]
                            [lein-difftest "2.0.0"]
