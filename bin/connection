@@ -6,5 +6,10 @@ c="$(ifconfig -a inet 2>/dev/null \
       | sed -n -e /127.0.0.1/d -e /0.0.0.0/d -e /inet/p \
       | grep -c $)"
 
-# shellcheck disable=SC2015
-test "$c" = 0 && { echo "not connected"; exit 1; } || { echo "connected"; exit 0; }
+if test "$c" = 0; then
+  echo "not connected"
+  exit 1
+else
+  echo "connected"
+  exit 0
+fi
