@@ -203,9 +203,12 @@ _alias gc    || alias gc='git commit'
 _alias gca   || alias gca='git commit --amend'
 _alias gco   || alias gco='git checkout'
 _alias gd    || alias gd='git diff'
+_alias gdr   || alias gdr='git diff --cached -M --'
+_alias gds   || alias gds='git diff --staged'
 _alias gpick || alias gpick='git cherry-pick -x'
 _alias gpr   || alias gpr='git merge --no-ff'
 _alias gpt   || alias gpt='git push --tags'
+_alias gpv   || alias gpv='git push --no-verify'
 _alias gr    || alias gr='git pull --rebase'
 _alias grm   || alias grm='git rm'
 _alias groot || alias groot='cd $(git rev-parse --show-cdup) '
@@ -725,4 +728,63 @@ fi
 # COMPLETE
 # -----------------------------------------------------------------------------
 ! type aws_completer >/dev/null 2>&1 || complete -C aws_completer aws
+# -----------------------------------------------------------------------------
+
+# AI? WTF AM I DOING?
+# -----------------------------------------------------------------------------
+alias ai="copilot --allow-all-tools --model claude-opus-4.5 "
+# -----------------------------------------------------------------------------
+
+
+# -----------------------------------------------------------------------------
+# Check for trailing spaces
+function trails {
+  file="$1"
+  test -f "$file" || return 1
+  sed -i '' 's/[[:space:]]*$//' "$file"
+}
+
+function trailsall {
+  for file in $(git ls-files --exclude-standard); do
+    trails "$file"
+  done
+}
+
+function mdfix {
+  file="$1"
+  test -f "$file" || return 1
+  awk '
+  function is_list(line) {
+    return (line ~ /^[[:space:]]*[-*][[:space:]]/ || line ~ /^[[:space:]]*[0-9]+\.[[:space:]]/)
+  }
+  function is_blank(line) {
+    return (line ~ /^[[:space:]]*$/)
+  }
+  NR == 1 { prev = $0; next }
+  {
+    if (is_list($0) && !is_blank(prev) && !is_list(prev)) {
+      print prev
+      print ""
+    } else {
+      print prev
+    }
+    prev = $0
+  }
+  END { print prev }
+  ' "$file" > "${file}.tmp" && mv -f "${file}.tmp" "$file"
+}
+
+function fixmd {
+  for file in $(git ls-files --exclude-standard --modified --others '*.md'); do
+    mdfix "$file"
+    trails "$file"
+  done
+}
+
+
+function mdfixall {
+  for file in $(git ls-files --exclude-standard '*.md'); do
+    mdfix $file
+  done
+}
 # -----------------------------------------------------------------------------
