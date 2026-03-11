@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
-
 set -e
 test -z "${DEBUG}" || set -x
 
 ##
 # parameters
-: "${REPO:=$HOME/repos}"
+: "${REPO:=$HOME/git}"
 opts="Dhps"
 p=false
 doShort=false
+
 function usage {
   cat << _usage_
   $(basename "$0"): copy commit sha to pasteboard
 
   usage:
-    $(basename "$0") [-$opts] <repo>
+    $(basename "$0") [-$opts] [repo]
 
-    D            - turn on debug mode (default: OFF).
-    h            - you are here.
-    p            - print to stdout (default: $p).
-    s            - short commit sha.
+    D - turn on debug mode.
+    h - you are here.
+    p - print to stdout (default: $p).
+    s - short commit sha.
 _usage_
 }
 
@@ -28,19 +28,22 @@ test "$(uname -s)" = Darwin && cmd='pbcopy' || cmd='xargs echo'
 
 while getopts $opts opt; do
   case $opt in
-    D)   DEBUG=true; set -x                         ;;
-    h)   usage; exit                                ;;
-    p)   cmd='xargs echo'                           ;;
-    s)   doShort=true                               ;;
-    ?|*) echo; usage; exit 5                        ;;
+    D)   DEBUG=true; set -x  ;;
+    h)   usage; exit         ;;
+    p)   cmd='xargs echo'   ;;
+    s)   doShort=true        ;;
+    ?|*) echo; usage; exit 5 ;;
   esac
 done
 shift $((OPTIND-1))
 ##
 
 
+##
+# main
+context=.
 if test -n "$1"; then
-  test -z "$ORG" || org=/$ORG
+  test -z "$GH_ORG" || org=/$GH_ORG
   dir=$REPO${org}/$1
   test -d "$dir" || { echo "$dir not found!" >&2; exit 1; }
   context="$dir"
@@ -52,5 +55,5 @@ else
   sha="$(git -C "$context" rev-parse HEAD)"
 fi
 
-
 echo -n "$sha" | $cmd
+##

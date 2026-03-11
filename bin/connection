@@ -1,10 +1,20 @@
 #!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
 
-test "$(uname -s)" = Darwin || { echo "MacOSX only!" >&2; exit 1; }
+##
+# Check for network connectivity.
+# Returns 0 if connected, 1 if not.
+##
 
-c="$(ifconfig -a inet 2>/dev/null \
-      | sed -n -e /127.0.0.1/d -e /0.0.0.0/d -e /inet/p \
-      | grep -c $)"
+if test "$(uname -s)" = Darwin; then
+  c="$(ifconfig -a inet 2>/dev/null \
+        | sed -n -e /127.0.0.1/d -e /0.0.0.0/d -e /inet/p \
+        | grep -c $)"
+else
+  # linux: check default route
+  c="$(ip route 2>/dev/null | grep -c default)"
+fi
 
 if test "$c" = 0; then
   echo "not connected"

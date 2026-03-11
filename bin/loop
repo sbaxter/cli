@@ -1,37 +1,45 @@
 #!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
 
-opts=hdes:
+##
+# parameters
+opts="Dhdes:"
 divider=false
-exit_on_error=false
+exitOnError=false
 seconds=5
 
-function _usage {
-  cat << _USAGE_
+function usage {
+  cat << _usage_
   $(basename "$0"): repeat a command ad infinitum
 
-  Usage:
-    $(basename "$0") [hdes] <command...>
+  usage:
+    $(basename "$0") [-$opts] <command...>
 
-  Options:
-    -h           you are here.
-    -d           print a divider between iteration outputs
-    -e           exit on error
-    -s <seconds> number of seconds between iterations (default: $seconds)
-_USAGE_
+    D - turn on debug mode.
+    h - you are here.
+    d - print a divider between iterations.
+    e - exit on error.
+    s - seconds between iterations (default: $seconds).
+_usage_
 }
 
 while getopts $opts opt; do
   case $opt in
-    h) _usage; exit                          ;;
-    d) divider=true                          ;;
-    e) exit_on_error=true                    ;;
-    s) [ -n "$OPTARG" ] && seconds="$OPTARG" ;;
-    ?|*)  exit 2                             ;;
+    D)   DEBUG=true; set -x                          ;;
+    h)   usage; exit                                 ;;
+    d)   divider=true                                ;;
+    e)   exitOnError=true                            ;;
+    s)   test -n "$OPTARG" && seconds="$OPTARG"      ;;
+    ?|*) echo; usage; exit 5                         ;;
   esac
 done
-
 shift $((OPTIND-1))
+##
 
+
+##
+# main
 test -n "$*" || { echo "supply a command to loop" >&2; exit 1; }
 
 echo "looping { $*; } every $seconds seconds; CTRL+C to quit."
@@ -41,9 +49,10 @@ do
   { "$@"; }
   code=$?
 
-  $exit_on_error && { test $code = 0 || break; }
+  $exitOnError && { test $code = 0 || break; }
 
   sleep "$seconds"
 
   $divider && echo "-----"
 done
+##

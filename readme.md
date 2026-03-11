@@ -1,116 +1,96 @@
-#cli
-My base cli setup.
+# cli
 
-## Installation
-Setup symlinks to config files in this repo:
+Portable bash configuration. POSIX-minded, shellcheck-clean.
+
+## Install
+
+```bash
+./install            # create symlinks
+./install -b .bak    # backup existing files first
 ```
-$: ./install
+
+**gitconfig** is not installed by the script — copy and edit manually:
+
+```bash
+cp gitconfig ~/.gitconfig
+# edit name, email, signing key, github user
 ```
-* Use the `-b <extension>` flag to save a backup of the current config file (if one already exists).
-* `gitconfig` will not be installed by the script.
+
+## Structure
+
+| File | Target | Purpose |
+|------|--------|---------|
+| `bashrc` | `~/.bashrc` | Interactive shell config |
+| `inputrc` | `~/.inputrc` | vi mode for readline |
+| `gitconfig` | (manual) | Git config template |
+| `gitignore` | `~/.gitignore` | Global gitignore |
+| `psqlrc` | `~/.psqlrc` | PostgreSQL shell config |
+| `hushlogin` | `~/.hushlogin` | Suppress macOS login banner |
+| `vi/vimrc` | `~/.vimrc`, `~/.ideavimrc` | Vim configuration |
+| `vi/colors/` | `~/.vim/colors/` | Vim color schemes |
+
+## Conventions
+
+- `#!/usr/bin/env bash` + `set -e` + conditional `set -x`
+- `test` over `[[ ]]` (except regex). Long flags for readability.
+- camelCase locals, UPPERCASE exports, `function name {` syntax
+- Section markers: `##` / `##` wrapping logical sections
+- shellcheck-clean
 
 ## Bash
-My bashrc follows me everywhere; thus I include darwin and linux specific functionality in my `bashrc`. I store machine-specific stuff in `.bash_profile` (not included in this repo) and super secret stuff in a `.bash_private` file.
+
+Single bashrc follows the user everywhere — macOS and Linux compatible.
+Machine-specific config belongs in `~/.bash_profile` (private repo).
+Secrets go in `~/.bash_private` (not in any repo).
 
 ### Prompt
-I have hacked my own prompt, but it is probably smarter to use the prompt in git [contrib](https://github.com/git/git/blob/master/contrib/completion/git-prompt.sh).
 
-### VI Mode
-I use vi key bindings where possible: the bashrc file will `set -o vi` for editing the command line and the `inputrc` file will activate vi mode for other readline prompts (e.g. psql).
+Hand-rolled 2-line prompt with git branch and dirty indicators:
 
-## bin
-Bin files are automatically added to the path if you're using the [`.bashrc` file](./bashrc#L61-L63) in this repo.
-
-### [`update`](./bin/update)
-A script I use to update key repos regularly. To use, just set the `$UPDATE_LIST` environment variable to contain a list of repos to update.
-
-Example:
 ```
-  $: export UPDATE_LIST="$HOME/repos/cli $HOME/.emacs.d"
-  $: update
-  Updating /home/sbaxter/repos/cli
-  UNABLE TO UPDATE (DIRTY)
-  Updating /home/sbaxter/.emacs.d
+[main!+?][hostname(org)://cwd]: 
 ```
 
-### [`daily`](./bin/daily)
-Execute a script on login, but no more than once per day. The `-f` option flag will execute only on the first login of the day.
-Example from my `.bash_profile`:
-```
-  daily -f diskusage
-  daily -f update > /dev/null && echo
-  daily -f brew update && echo && brew outdated && echo
-  daily backup
+- `!` = unstaged changes
+- `+` = staged changes
+- `?` = untracked files
+
+### Org / System / Repo
+
+```bash
+org shb                    # switch org context
+sys myapp                  # set system (repo group)
+repo frontend              # cd to ~/git/sbaxter/myapp/frontend
+repo myapp/frontend        # inline system/repo (no sys needed)
+gclone myrepo              # clone into ~/git/$GH_ORG/[$SYSTEM/]myrepo
+gclone homebrew-ctx brew   # clone as different local name
 ```
 
-*Note: `anacron` may be a better option for stuff like this: write the output to a file and cat the results on login.*
+Org definitions live in the private repo. The public repo provides only
+the switching mechanism (`org` function reads from `ORG_DEFS` array).
 
-### [`backup`](./bin/backup)
-A script I use to backup key files to AWS s3. To use, just set the `$BACKUP_LIST` environment variable to contain a list of files and directories to backup.
+### Aliases
 
-Example on Mac OSX:
-```
-  [Ptolemy:/~]: export BACKUP_LIST="$HOME/.bash_profile"
-  [Ptolemy:/~]: backup
-  upload: .backup/.bash_profile to s3://my-backups/Ptolemy/.bash_profile
-  upload: .backup/latest.txt to s3://my-backups/Ptolemy/latest.txt
-  upload: .backup/brewlist.txt to s3://my-backups/Ptolemy/brewlist.txt
-```
+Navigation: `..` `..2`–`..5` `back`
 
-*Note: `$HOME/ssh/config` is automatically backed up by this script; a list of brew packages is also stored on Mac OSX.*
+Git: `ga` `gc` `gca` `gco` `gd` `gds` `gdr` `gp` `gu` `gr` `gst` `grb`
+`groot` `hist` `gpick` `gpr` `gpt` `gpv` `grm` `gt`
 
-### AWS scripts
-#### [`cfn`](./bin/cfn)
-* View stack status:
-```
-  $: cfn my-app
-  my-app     UPDATE_COMPLETE
-```
-* Retrieve a stack output or parameter:
-```
-  $: cfn -o ELBDNS my-app
-  my-app-XXXXXXXXX.us-east-1.elb.amazonaws.com
+Safety: `cp -i` `mv -i` `rm -i`
 
-  $: cfn -p Stage my-app
-  production
-```
-* validate a cloudformation template:
-```
-  $: cfn -t cfn-template.json
+Other: `ll` `lla` `ngrep` `vi` `blint` `brup` `pc`
 
-  A client error (ValidationError) occurred when calling the ValidateTemplate operation: Template format error: JSON not well-formed. (line 1, column 3)
-```
-* Run `cfn -h` for more options.
+## Bin
 
-#### [`ec2`](./bin/ec2)
-* Return ec2 public dns by `Tag` (verbose instance information with `-v`):
-```
-  $: ec2 my-app
-  ec2-XX-XX-XXX-XXX.compute-1.amazonaws.com
-```
-* Return ec2 public dns by `instance-id` (verbose instance information with `-v`):
-```
-  $: ec2 -i i-bc9af510
-  ec2-XX-XX-XXX-XXX.compute-1.amazonaws.com
-```
-* If [`jump`](./bin/jump) is available, you can jump to the server through a jump host in one command:
-```
-  $: ec2 -j my-app
-  ..ssh session..
-```
-* Alternatively, you can ssh directly:
-```
-  $: ssh $(ec2 my-app | head -n 1)
-```
-* Run `ec2 -h` for more options.
-
-#### `asg`
-TODO
-
-#### `elb`
-TODO
-
-
-## Credits
-* [georgeflanagin](https://github.com/georgeflanagin): my cli sensei
-* [vrivellino](https://github.com/vrivellino)
+| Script | Purpose |
+|--------|---------|
+| `backup` | Backup files to S3 |
+| `chash` | Copy commit SHA to pasteboard |
+| `connection` | Check network connectivity |
+| `daily` | Execute scripts max once per day |
+| `diskusage` | Show disk usage with warning |
+| `extract` | Extract common archive formats |
+| `loop` | Repeat a command at intervals |
+| `pg` | Connect to local PostgreSQL |
+| `update` | Pull latest on repos from `$UPDATE_LIST` |
+| `wifi` | Toggle wifi on/off (macOS) |

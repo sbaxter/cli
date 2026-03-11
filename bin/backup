@@ -1,9 +1,48 @@
 #!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
 
+##
+# parameters
+opts="Dh"
+
+function usage {
+  cat << _usage_
+  $(basename "$0"): backup files to S3
+
+  usage:
+    $(basename "$0") [-$opts]
+
+    D - turn on debug mode.
+    h - you are here.
+
+  requires:
+    S3_BACKUP_BUCKET - S3 bucket name.
+    BACKUP_LIST      - space-separated list of files/dirs to back up.
+_usage_
+}
+
+while getopts $opts opt; do
+  case $opt in
+    D)   DEBUG=true; set -x  ;;
+    h)   usage; exit         ;;
+    ?|*) echo; usage; exit 5 ;;
+  esac
+done
+shift $((OPTIND-1))
+##
+
+
+##
+# validation
 type aws >/dev/null 2>&1 || { echo "$0: aws-cli not installed" >&2; exit 1; }
 test -n "$S3_BACKUP_BUCKET" || { echo "S3_BACKUP_BUCKET not defined." >&2; exit 1; }
-test -n "$BACKUP_LIST" || { echo "$BACKUP_LIST is empty." >&2; exit 1; }
+test -n "$BACKUP_LIST" || { echo "BACKUP_LIST is empty." >&2; exit 1; }
+##
 
+
+##
+# main
 s3path="s3://$S3_BACKUP_BUCKET/backups/$HOSTNAME"
 staging="$HOME/.backup"
 mkdir -p "$staging/.ssh"
@@ -20,3 +59,4 @@ test "$(uname -s)" = Darwin && brew list > "$staging/brewlist.txt"
 date +%F.%H%M > "$staging/latest.txt"
 
 aws s3 sync --follow-symlinks "$staging" "$s3path"
+##

@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
 
+##
+# main
 pct=$(df -Hl "$HOME" | awk 'BEGIN{} {usage+=$5;} END{print usage}')
 
 test "$pct" -gt 80 && d="$(tput bold; tput setaf 7; tput setab 1;)"
 
 echo -e "${d}DiskUsage: $pct%$(tput sgr0)"
+##

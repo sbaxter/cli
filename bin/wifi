@@ -1,7 +1,40 @@
 #!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
 
-test "$(uname -s)" = Darwin || { echo "MacOSX only!" >&2; exit 1; }
+##
+# parameters
+opts="Dh"
 
-test -z "$1" && toggle=on || toggle="$1"
+function usage {
+  cat << _usage_
+  $(basename "$0"): toggle wifi on/off (macOS only)
 
+  usage:
+    $(basename "$0") [-$opts] [on|off]
+
+    D - turn on debug mode.
+    h - you are here.
+
+    Default: on
+_usage_
+}
+
+while getopts $opts opt; do
+  case $opt in
+    D)   DEBUG=true; set -x  ;;
+    h)   usage; exit         ;;
+    ?|*) echo; usage; exit 5 ;;
+  esac
+done
+shift $((OPTIND-1))
+##
+
+
+##
+# main
+test "$(uname -s)" = Darwin || { echo "macOS only!" >&2; exit 1; }
+
+toggle="${1:-on}"
 networksetup -setairportpower airport "$toggle"
+##

@@ -1,19 +1,28 @@
 #!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
 
+##
+# parameters
 # shellcheck disable=SC2209
 test "$(uname -s)" = Darwin && dcmd=gdate || dcmd=date
 type "$dcmd" >/dev/null 2>&1 || { echo "FATAL: GNU Date not installed" >&2; exit 1; }
 
 fmt=%s
 qual=day
-while getopts f opt ; do
+
+while getopts f opt; do
   case $opt in
-    f) fmt=%Y%m%d; qual=hour ;;
-    ?|*) exit 2 ;;
+    f)   fmt=%Y%m%d; qual=hour ;;
+    ?|*) exit 2                ;;
   esac
 done
 shift $((OPTIND-1))
+##
 
+
+##
+# main
 logfile="$HOME/.logs/last_$1_run.log"
 d=$($dcmd +$fmt)
 y=$($dcmd --date="1 $qual ago" +$fmt)
@@ -33,3 +42,4 @@ else
   echo "$1 is not available." >&2
   exit 1
 fi
+##

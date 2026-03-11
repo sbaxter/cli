@@ -3,27 +3,28 @@
 
 :imap jj <Esc>
 
-"Line Numbers - yes.
+"Line Numbers
 :set number
-"Specify syntax files.
+"Syntax highlighting
 :syntax enable
-"Row/Column indicators.
+"Row/Column indicators
 :set ruler
-"Highlight search terms.
+"Highlight search terms
 :set hlsearch
 
 "Tab stop = 2
 :set ts=2
 :set shiftwidth=2
-"No tabs.
+"No tabs
 :set expandtab
 
-:au! Syntax clojure source $VI_CONFIG/syntax/clojure.vim
 :au! Syntax json source $VI_CONFIG/syntax/json.vim
 :au! Syntax less source $VI_CONFIG/syntax/less.vim
 :au! Syntax md source $VI_CONFIG/syntax/md.vim
 :au! Syntax mustache source $VI_CONFIG/syntax/mustache.vim
 :au! Syntax jq source $VI_CONFIG/syntax/jq.vim
+:au! Syntax go source $VI_CONFIG/syntax/go.vim
+:au! Syntax rust source $VI_CONFIG/syntax/rust.vim
 
 
 "Begin autocommands
@@ -32,7 +33,6 @@
 :  let au_loaded = 1
 
 "Special syntax files
-:  au BufNewFile,BufRead *.clj       set filetype=clojure
 :  au BufNewFile,BufRead *.go        set filetype=go
 :  au BufNewFile,BufRead *.less      set filetype=less
 :  au BufNewFile,BufRead *.json      set filetype=json
@@ -44,24 +44,25 @@
 :  au BufNewFile,BufRead *.ts        set filetype=javascript
 :  au BufNewFile,BufRead *.jq        set filetype=jq
 :  au BufNewFile,BufRead Jenkinsfile set filetype=groovy
-:  au BufNewFile,BufRead JenkinsFile set filetype=groovy
 :  au BufNewFile,BufRead Vagrantfile set filetype=ruby
+:  au BufNewFile,BufRead Dockerfile* set filetype=dockerfile
 
 "Language specific considerations
 :  au BufNewFile,BufRead *.py        set shiftwidth=4
 :  au BufNewFile,BufRead *.py        set tabstop=4
+:  au BufNewFile,BufRead *.rs        set shiftwidth=4
+:  au BufNewFile,BufRead *.rs        set tabstop=4
 
-"Highlight trailing whitespace, tabs, and long lines.
+"Highlight trailing whitespace, tabs, and long lines
 :  hi unwanted ctermbg=cyan guibg=cyan
-":  au BufReadPost,InsertLeave * match unwanted /\s\+\%#\@<!$\|\t/
 
-"Highlight the 80th column if available.
+"Highlight the 80th column if available
 :  if exists( '+colorcolumn' )
 :    hi colorcolumn ctermbg=233
 :    set colorcolumn=80
 :  endif
 
-"Clear match buffer. Check version for old AWS instances at work.
+"Clear match buffer
 :  if version >= 702
 :    au BufWinLeave * call clearmatches()
 :  endif

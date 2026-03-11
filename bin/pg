@@ -1,4 +1,49 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
+
+##
+# parameters
+opts="Dhp:u:"
+host=127.0.0.1
+port=5432
+user=""
+
+function usage {
+  cat << _usage_
+  $(basename "$0"): connect to a local PostgreSQL instance
+
+  usage:
+    $(basename "$0") [-$opts] [database]
+
+    D - turn on debug mode.
+    h - you are here.
+    p - port (default: $port).
+    u - user.
+_usage_
+}
+
+while getopts $opts opt; do
+  case $opt in
+    D)   DEBUG=true; set -x            ;;
+    h)   usage; exit                   ;;
+    p)   port="$OPTARG"                ;;
+    u)   user="$OPTARG"                ;;
+    ?|*) echo; usage; exit 5           ;;
+  esac
+done
+shift $((OPTIND-1))
+##
+
+
+##
+# main
 type psql >/dev/null 2>&1 || { echo "$0: psql not installed" >&2; exit 1; }
 
-psql -h 127.0.0.1 -p 5432 --set PROMPT1='local.%/=> ' --set PROMPT2='local.%/--> ' "$@"
+args=(-h "$host" -p "$port")
+args+=(--set PROMPT1='local.%/=> ')
+args+=(--set PROMPT2='local.%/--> ')
+test -z "$user" || args+=(-U "$user")
+
+psql "${args[@]}" "$@"
+##

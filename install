@@ -1,44 +1,99 @@
-function _usage {
-  cat << _USAGE_
+#!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
 
-  `basename $0` [-hb]
+##
+# directory context
+pushd "$(dirname "$0")" > /dev/null
+root=$(pwd)
+popd > /dev/null
+##
 
-    -h         help (you are here)
-    -b <ext>   backup files with the given extension
-_USAGE_
+
+##
+# parameters
+opts="b:Dh"
+backup=""
+
+function usage {
+  cat << _usage_
+  $(basename "$0"): install cli symlinks to \$HOME
+
+  usage:
+    $(basename "$0") [-$opts]
+
+    b <ext> - backup existing files with extension (e.g. -b .bak).
+    D       - turn on debug mode.
+    h       - you are here.
+
+  note:
+    gitconfig is not installed by this script (copy and edit manually).
+_usage_
 }
 
-bak=false
-while getopts hb: opt ; do
+while getopts $opts opt; do
   case $opt in
-    h) _usage && exit 0 ;;
-    b)  [ -n "$OPTARG" ] && bak="$OPTARG" ;;
-    ?|*)  _usage && exit 2;;
-    esac
+    b)   backup="$OPTARG"    ;;
+    D)   DEBUG=true; set -x  ;;
+    h)   usage; exit         ;;
+    ?|*) echo; usage; exit 5 ;;
+  esac
 done
-shift $(($OPTIND-1))
+shift $((OPTIND-1))
+##
 
-pushd `dirname $0` > /dev/null
-b=$(pwd -P)
-popd > /dev/null
 
-mkdir -p $HOME/.vim
+##
+# link: create a symlink idempotently
+#   link <source> <target>
+function link {
+  local src="$1"
+  local target="$2"
 
-if [ $bak != false ]; then
-  for f in .bashrc .inputrc .psqlrc .vimrc .gitignore .lein/profiles.clj; do
-    [ -f $HOME/$f ] && cp $HOME/$f $HOME/$f.$bak
-  done
-  { test -d $HOME/.vim/colors && mv $HOME/.vim/colors $HOME/.vim/colors.bak; }
-fi
+  if test -L "$target"; then
+    local current
+    current=$(readlink "$target")
+    if test "$current" = "$src"; then
+      echo "  skip: $target (already linked)"
+      return
+    fi
+  fi
 
-mkdir -p $HOME/.lein
-{ rm -f $HOME/.git-completion.bash; ln -s $b/git-completion.bash $HOME/.git-completion.bash; }
-{ rm -f $HOME/.bashrc; ln -s $b/bashrc $HOME/.bashrc; }
-{ rm -f $HOME/.inputrc; ln -s $b/inputrc $HOME/.inputrc; }
-{ rm -f $HOME/.psqlrc; ln -s $b/psqlrc $HOME/.psqlrc; }
-{ rm -f $HOME/.vimrc; ln -s $b/vi/vimrc $HOME/.vimrc; }
-{ rm -f $HOME/.vimrc; ln -s $b/vi/vimrc $HOME/.ideavimrc; }
-{ rm -f $HOME/.hushlogin; ln -s $b/hushlogin $HOME/.hushlogin; }
-{ rm -f $HOME/.gitignore; ln -s $b/.gitignore $HOME/.gitignore; }
-{ rm -f $HOME/.lein/profiles.clj; ln -s $b/profiles.clj $HOME/.lein/profiles.clj; }
-{ rm -rf $HOME/.vim/colors; ln -s $b/vi/colors $HOME/.vim/colors; }
+  if test -e "$target"; then
+    if test -n "$backup"; then
+      echo "  backup: $target → ${target}${backup}"
+      cp -a "$target" "${target}${backup}"
+    else
+      echo "  warn: $target exists (use -b to backup)" >&2
+      return
+    fi
+  fi
+
+  local targetDir
+  targetDir=$(dirname "$target")
+  test -d "$targetDir" || mkdir -p "$targetDir"
+
+  ln -sf "$src" "$target"
+  echo "  link: $target → $src"
+}
+##
+
+
+##
+# main
+echo "installing cli from $root"
+
+link "$root/bashrc"         "$HOME/.bashrc"
+link "$root/inputrc"        "$HOME/.inputrc"
+link "$root/psqlrc"         "$HOME/.psqlrc"
+link "$root/hushlogin"      "$HOME/.hushlogin"
+link "$root/gitignore"      "$HOME/.gitignore"
+link "$root/vi/vimrc"       "$HOME/.vimrc"
+link "$root/vi/vimrc"       "$HOME/.ideavimrc"
+link "$root/vi/colors"      "$HOME/.vim/colors"
+
+echo "done."
+echo ""
+echo "note: copy and edit gitconfig manually:"
+echo "  cp $root/gitconfig ~/.gitconfig"
+##

@@ -1,0 +1,16 @@
+# Editor/OS artifacts
+*.diff
+*.err
+*.log
+*.orig
+*.rej
+*.swo
+*.swp
+*~
+.DS_Store
+._*
+Thumbs.db
+.cache
+
+# Build artifacts
+cmake-build-*

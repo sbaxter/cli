@@ -1,10 +1,42 @@
 #!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
 
+##
+# parameters
+opts="Dh"
+
+function usage {
+  cat << _usage_
+  $(basename "$0"): extract common archive formats
+
+  usage:
+    $(basename "$0") [-$opts] <file>
+
+    D - turn on debug mode.
+    h - you are here.
+_usage_
+}
+
+while getopts $opts opt; do
+  case $opt in
+    D)   DEBUG=true; set -x  ;;
+    h)   usage; exit         ;;
+    ?|*) echo; usage; exit 5 ;;
+  esac
+done
+shift $((OPTIND-1))
+##
+
+
+##
+# main
 test -f "$1" || { echo "$1 is not a valid file." >&2; exit 1; }
 
 case $1 in
   *.tar.bz2)   tar xvjf "$1"    ;;
   *.tar.gz)    tar xvzf "$1"    ;;
+  *.tar.xz)    tar xvJf "$1"    ;;
   *.bz2)       bunzip2 "$1"     ;;
   *.rar)       unrar x "$1"     ;;
   *.gz)        gunzip "$1"      ;;
@@ -14,5 +46,7 @@ case $1 in
   *.zip)       unzip "$1"       ;;
   *.Z)         uncompress "$1"  ;;
   *.7z)        7z x "$1"        ;;
-  *)           echo "don't know how to extract '$1'" ;;
+  *.zst)       zstd -d "$1"     ;;
+  *)           echo "don't know how to extract '$1'" >&2; exit 1 ;;
 esac
+##
