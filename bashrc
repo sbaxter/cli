@@ -150,6 +150,7 @@ _alias grep   || alias grep='grep --color=auto'
 _alias ngrep  || alias ngrep='grep --color=auto --exclude-dir node_modules'
 _alias ll     || alias ll='ls -hl'
 _alias lla    || alias lla='ls -ahl'
+_alias lsd    || alias lsd='ls -dl -- */'
 _alias mv     || alias mv='mv -i'
 _alias rm     || alias rm='rm -i'
 _alias vi     || alias vi=vim
