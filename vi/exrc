@@ -1,0 +1,4 @@
+set tabstop=2
+set autoindent
+set ignorecase
+set showmatch
