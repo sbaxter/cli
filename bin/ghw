@@ -1,0 +1,188 @@
+#!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
+
+##
+# parameters
+opts="r:i:t:TDh"
+repo=""
+interval=15
+timeout=0
+use_tags=false
+run_id=""
+pattern=""
+build_conclusion=""
+
+function usage {
+  cat << _usage_
+  $(basename "$0"): poll GitHub for build or version status.
+
+  usage:
+    $(basename "$0") <subcommand> [options] [args]
+
+  subcommands:
+    build   [run-id]   Wait for a workflow run to complete.
+                       Defaults to the latest run for the current branch.
+    version <pattern>  Wait for a commit message (or tag with -T) to appear.
+
+  options:
+    D - turn on debug mode.
+    h - you are here.
+    r - owner/repo (default: inferred from git remote origin).
+    i - poll interval in seconds (default: $interval).
+    t - timeout in seconds, 0 = none (default: $timeout).
+    T - match tags instead of commit messages (version only).
+
+  examples:
+    $(basename "$0") build
+    $(basename "$0") build 12345678
+    $(basename "$0") build -r owner/repo
+    $(basename "$0") version "ttg 2.3.2"
+    $(basename "$0") version -T "v2.3.2"
+    $(basename "$0") version -r owner/repo "release 1.0"
+_usage_
+}
+
+function die {
+  echo "error: $1" >&2
+  exit 1
+}
+
+test "$#" -ge 1 || { usage; exit 1; }
+subcmd="$1"
+shift
+
+case "$subcmd" in -h) usage; exit ;; esac
+
+while getopts "$opts" opt; do
+  case "$opt" in
+    r)   repo="$OPTARG"                ;;
+    i)   interval="$OPTARG"            ;;
+    t)   timeout="$OPTARG"             ;;
+    T)   use_tags=true                 ;;
+    D)   DEBUG=true; set -x            ;;
+    h)   usage; exit                   ;;
+    ?|*) echo; usage; exit 5           ;;
+  esac
+done
+shift $((OPTIND-1))
+
+test "$interval" -ge 1 2>/dev/null || die "poll interval must be a positive integer"
+test "$timeout" -ge 0 2>/dev/null  || die "timeout must be a non-negative integer"
+##
+
+
+##
+# functions
+function detect_repo {
+  local url
+  url=$(git remote get-url origin 2>/dev/null) || die "not in a git repo or no origin remote"
+  echo "$url" | sed -E 's#^(https?://[^/]+/|git@[^:]+:)##; s/\.git$//'
+}
+
+function require_gh {
+  command -v gh >/dev/null 2>&1 || die "gh CLI not found"
+  gh auth status >/dev/null 2>&1 || die "gh CLI not authenticated"
+}
+
+function check_build {
+  local status
+  status=$(gh run view "$run_id" --repo "$repo" --json status --jq '.status' 2>/dev/null) || return 1
+  test "$status" = "completed" || return 1
+  build_conclusion=$(gh run view "$run_id" --repo "$repo" --json conclusion --jq '.conclusion' 2>/dev/null) || return 1
+}
+
+function check_version {
+  if test "$use_tags" = "true"; then
+    gh api "repos/${repo}/tags?per_page=10" --jq '.[].name' 2>/dev/null | grep -qFx "$pattern"
+  else
+    local msg
+    msg=$(gh api "repos/${repo}/commits?per_page=1" --jq '.[0].commit.message' 2>/dev/null) || return 1
+    test "$msg" = "$pattern"
+  fi
+}
+
+function poll {
+  local check_fn="$1"
+  local label="$2"
+  local elapsed=0
+
+  echo "Waiting for ${label} (polling every ${interval}s)..."
+
+  while true; do
+    if "$check_fn"; then
+      echo ""
+      tput bel 2>/dev/null || true
+      return 0
+    fi
+
+    if test "$timeout" -gt 0 && test "$elapsed" -ge "$timeout"; then
+      echo "" >&2
+      echo "Timed out after ${elapsed}s." >&2
+      return 2
+    fi
+
+    echo -n "."
+    sleep "$interval"
+    elapsed=$((elapsed + interval))
+  done
+}
+
+function cmd_build {
+  run_id="${1:-}"
+
+  if test -z "$run_id"; then
+    local branch
+    branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || die "not on a branch"
+    run_id=$(gh run list --repo "$repo" --branch "$branch" --limit 1 \
+      --json databaseId --jq '.[0].databaseId' 2>/dev/null) || true
+    test -n "$run_id" || die "no workflow runs found for branch '${branch}' in ${repo}"
+    echo "Found run ${run_id} for branch '${branch}'."
+  fi
+
+  local exit_code=0
+  poll check_build "build run ${run_id} in ${repo}" || exit_code=$?
+
+  if test "$exit_code" -ne 0; then
+    exit "$exit_code"
+  fi
+
+  echo "Run ${run_id} completed: ${build_conclusion}"
+  test "$build_conclusion" = "success"
+}
+
+function cmd_version {
+  pattern="${1:-}"
+  test -n "$pattern" || die "usage: $(basename "$0") version <pattern>"
+
+  local match_type="commit"
+  test "$use_tags" = "true" && match_type="tag"
+
+  local exit_code=0
+  poll check_version "${match_type} '${pattern}' in ${repo}" || exit_code=$?
+
+  if test "$exit_code" -ne 0; then
+    exit "$exit_code"
+  fi
+
+  if test "$use_tags" = "true"; then
+    echo "Tag '${pattern}' found in ${repo}."
+  else
+    echo "Commit '${pattern}' found in ${repo}."
+  fi
+}
+##
+
+
+##
+# main
+test -n "$repo" || repo=$(detect_repo)
+
+require_gh
+
+case "$subcmd" in
+  build)   cmd_build "$@"   ;;
+  version) cmd_version "$@" ;;
+  *)       die "unknown subcommand: ${subcmd}" ;;
+esac
+##
