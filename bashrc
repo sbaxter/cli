@@ -415,8 +415,7 @@ function sign {
 # PROCESS
 # -----------------------------------------------------------------------------
 function isrunning {
-  #shellcheck disable=SC2009
-  ps -ef | grep -i "$1" | grep -v grep
+  echo "USE ISR OLD MAN!"
 }
 
 function wpid {

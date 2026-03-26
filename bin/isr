@@ -1,0 +1,206 @@
+#!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
+
+##
+# isr — "is running?" process lookup
+#
+# Usage: isr [-v] <pattern>
+#   -v  verbose: full paths, cpu/mem/elapsed, tree, listening ports
+##
+
+verbose=0
+if [[ "$1" == "-v" ]]; then
+  verbose=1
+  shift
+fi
+
+pattern="$1"
+if [[ -z "$pattern" ]]; then
+  echo "Usage: isr [-v] <pattern>"
+  exit 1
+fi
+
+bold="$(tput bold 2>/dev/null || true)"
+red="$(tput setaf 1 2>/dev/null || true)"
+cyan="$(tput setaf 6 2>/dev/null || true)"
+dim="$(tput dim 2>/dev/null || true)"
+reset="$(tput sgr0 2>/dev/null || true)"
+
+# Detect whether ps supports -eo (procps) or is BusyBox
+has_procps=1
+if ! ps -eo pid,ppid,pcpu 2>/dev/null | head -1 | grep -q PID; then
+  has_procps=0
+fi
+
+if [[ "$has_procps" -eq 1 ]]; then
+  # shellcheck disable=SC2009
+  raw="$(ps -eo pid,ppid,pcpu,pmem,etime,args \
+    | grep -i "$pattern" \
+    | grep -v "grep -i $pattern" \
+    | grep -v "isr.*$pattern" \
+    || true)"
+else
+  if [[ "$verbose" -eq 1 ]]; then
+    echo "${bold}${red}Note:${reset} procps not found — verbose mode unavailable (apk add procps)"
+    echo ""
+    verbose=0
+  fi
+  # BusyBox ps: use -o pid,ppid,args (no cpu/mem/etime)
+  # shellcheck disable=SC2009
+  raw="$(ps -o pid,ppid,args \
+    | grep -i "$pattern" \
+    | grep -v "grep -i $pattern" \
+    | grep -v "isr.*$pattern" \
+    || true)"
+fi
+
+if [[ -z "$raw" ]]; then
+  exit 1
+fi
+
+# Parse into arrays
+declare -a pids ppids cpus mems etimes cmds
+while IFS= read -r line; do
+  if [[ "$has_procps" -eq 1 ]]; then
+    pid="$(echo "$line" | awk '{print $1}')"
+    ppid="$(echo "$line" | awk '{print $2}')"
+    cpu="$(echo "$line" | awk '{print $3}')"
+    mem="$(echo "$line" | awk '{print $4}')"
+    etime="$(echo "$line" | awk '{print $5}')"
+    cmd="$(echo "$line" | awk '{for(i=6;i<=NF;i++) printf "%s ", $i; print ""}')"
+  else
+    pid="$(echo "$line" | awk '{print $1}')"
+    ppid="$(echo "$line" | awk '{print $2}')"
+    cpu="-" mem="-" etime="-"
+    cmd="$(echo "$line" | awk '{for(i=3;i<=NF;i++) printf "%s ", $i; print ""}')"
+  fi
+  cmd="${cmd% }"
+
+  pids+=("$pid")
+  ppids+=("$ppid")
+  cpus+=("$cpu")
+  mems+=("$mem")
+  etimes+=("$etime")
+  cmds+=("$cmd")
+done <<< "$raw"
+
+# Build set of matched PIDs for parent/child detection
+declare -A pid_set
+for pid in "${pids[@]}"; do
+  pid_set["$pid"]=1
+done
+
+# Identify parents (PIDs whose parent is NOT in the match set)
+declare -a parent_idxs
+for i in "${!pids[@]}"; do
+  if [[ -z "${pid_set[${ppids[$i]}]+x}" ]]; then
+    parent_idxs+=("$i")
+  fi
+done
+
+# If dedup collapsed everything (e.g. all share an external parent), show all
+if [[ "${#parent_idxs[@]}" -eq 0 ]]; then
+  for i in "${!pids[@]}"; do
+    parent_idxs+=("$i")
+  done
+fi
+
+basename_cmd() {
+  local full="$1"
+  local result=""
+  local first=1
+  for word in $full; do
+    if [[ $first -eq 1 ]]; then
+      result="$(basename -- "$word")"
+      first=0
+    else
+      if [[ "$word" == /* ]]; then
+        result="$result $(basename -- "$word")"
+      else
+        result="$result $word"
+      fi
+    fi
+  done
+  echo "$result"
+}
+
+children_of() {
+  local parent_pid="$1"
+  local idxs=()
+  for i in "${!pids[@]}"; do
+    if [[ "${ppids[$i]}" == "$parent_pid" && "${pids[$i]}" != "$parent_pid" ]]; then
+      idxs+=("$i")
+    fi
+  done
+  echo "${idxs[*]}"
+}
+
+if [[ "$verbose" -eq 0 ]]; then
+  # Default: PID + basename CMD, parents only
+  for i in "${parent_idxs[@]}"; do
+    short="$(basename_cmd "${cmds[$i]}")"
+    printf "%7s  %s\n" "${pids[$i]}" "$short"
+  done
+else
+  # Verbose: full tree with cpu/mem/elapsed/ports
+
+  # Gather listening ports per PID
+  declare -A pid_ports
+  if command -v lsof &>/dev/null; then
+    port_data="$(lsof -iTCP -sTCP:LISTEN -nP 2>/dev/null \
+      | awk 'NR>1 {print $2, $9}' || true)"
+  elif command -v ss &>/dev/null; then
+    # ss -tlnp output: users:(("cmd",pid=N,...))  *:port or [::]:port
+    port_data="$(ss -tlnp 2>/dev/null \
+      | awk 'NR>1 && match($0,/pid=[0-9]+/) {
+          pid=substr($0,RSTART+4,RLENGTH-4);
+          print pid, $4
+        }' || true)"
+  else
+    port_data=""
+  fi
+  if [[ -n "$port_data" ]]; then
+    while IFS= read -r pline; do
+      lpid="$(echo "$pline" | awk '{print $1}')"
+      lport="$(echo "$pline" | awk '{print $2}')"
+      if [[ -n "${pid_set[$lpid]+x}" ]]; then
+        if [[ -n "${pid_ports[$lpid]}" ]]; then
+          pid_ports["$lpid"]="${pid_ports[$lpid]},$lport"
+        else
+          pid_ports["$lpid"]="$lport"
+        fi
+      fi
+    done <<< "$port_data"
+  fi
+
+  printf "${bold}${cyan}%7s  %5s  %5s  %12s  %-s${reset}\n" \
+    "PID" "CPU%" "MEM%" "ELAPSED" "CMD"
+
+  for i in "${parent_idxs[@]}"; do
+    ports=""
+    if [[ -n "${pid_ports[${pids[$i]}]+x}" ]]; then
+      ports="  ${dim}[${pid_ports[${pids[$i]}]}]${reset}"
+    fi
+    printf "%7s  %5s  %5s  %12s  %s%s\n" \
+      "${pids[$i]}" "${cpus[$i]}" "${mems[$i]}" "${etimes[$i]}" "${cmds[$i]}" "$ports"
+
+    # Show children indented
+    child_idxs="$(children_of "${pids[$i]}")"
+    if [[ -n "$child_idxs" ]]; then
+      for ci in $child_idxs; do
+        cports=""
+        if [[ -n "${pid_ports[${pids[$ci]}]+x}" ]]; then
+          cports="  ${dim}[${pid_ports[${pids[$ci]}]}]${reset}"
+        fi
+        printf "${dim}%7s  %5s  %5s  %12s    └─ %s%s${reset}\n" \
+          "${pids[$ci]}" "${cpus[$ci]}" "${mems[$ci]}" "${etimes[$ci]}" "${cmds[$ci]}" "$cports"
+      done
+    fi
+  done
+
+  if [[ "${#pid_ports[@]}" -gt 0 ]]; then
+    echo ""
+    echo "${dim}Ports shown from $(command -v lsof &>/dev/null && echo "lsof" || echo "ss")${reset}"
+  fi
+fi
