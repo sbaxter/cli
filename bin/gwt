@@ -1,0 +1,134 @@
+#!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
+
+##
+# parameters
+opts="dmp:Dh"
+diff=false
+merge=false
+worktree_dir="./worktrees"
+##
+
+
+##
+# functions
+function usage {
+  cat << _usage_
+  $(basename "$0"): manage git worktrees by hash identifier.
+
+  usage:
+    $(basename "$0") [options] <hash>
+
+  Given a hash identifier, creates a branch and worktree with a
+  standardized layout. Supports diffing and fast-forward merging
+  the worktree branch back into the parent, with cleanup.
+
+  options:
+    d - diff the worktree branch against the parent branch.
+    m - fast-forward merge the worktree branch into the parent
+        branch and clean up the worktree and branch.
+    p - worktree base directory (default: $worktree_dir).
+    D - turn on debug mode.
+    h - you are here.
+
+  examples:
+    $(basename "$0") a1b2c3d
+    $(basename "$0") -d a1b2c3d
+    $(basename "$0") -m a1b2c3d
+    $(basename "$0") -p /tmp/trees a1b2c3d
+_usage_
+}
+
+function die {
+  echo "error: $1" >&2
+  exit 1
+}
+
+function require_git_repo {
+  git rev-parse --git-dir >/dev/null 2>&1 \
+    || die "not a git repository"
+}
+
+function resolve_parent_branch {
+  local branch
+  branch=$(git symbolic-ref --short HEAD 2>/dev/null) || true
+  test -n "$branch" || die "HEAD is detached — cannot determine parent branch"
+  echo "$branch"
+}
+
+function cmd_create {
+  local hash="$1"
+  local parent="$2"
+  local target="${worktree_dir}/${hash}"
+
+  test ! -d "$target" || die "worktree already exists: ${target}"
+
+  git branch "$hash" "$parent" 2>/dev/null \
+    || die "branch '${hash}' already exists"
+
+  mkdir -p "$worktree_dir"
+  git worktree add "$target" "$hash" --quiet
+  echo "created worktree: ${target} (branch ${hash} from ${parent})"
+}
+
+function cmd_diff {
+  local hash="$1"
+  local parent="$2"
+
+  git rev-parse --verify "$hash" >/dev/null 2>&1 \
+    || die "branch '${hash}' does not exist"
+
+  git --no-pager diff "${parent}...${hash}"
+}
+
+function cmd_merge {
+  local hash="$1"
+  local parent="$2"
+  local target="${worktree_dir}/${hash}"
+
+  git rev-parse --verify "$hash" >/dev/null 2>&1 \
+    || die "branch '${hash}' does not exist"
+
+  git merge --ff-only "$hash" \
+    || die "cannot fast-forward '${parent}' to '${hash}'"
+
+  if git worktree list --porcelain | grep -q "worktree.*/${hash}$"; then
+    git worktree remove "$target" --force
+  fi
+
+  git branch -d "$hash" --quiet
+  echo "merged ${hash} into ${parent}, worktree and branch cleaned up"
+}
+##
+
+
+##
+# main
+while getopts "$opts" opt; do
+  case "$opt" in
+    d)   diff=true                     ;;
+    m)   merge=true                    ;;
+    p)   worktree_dir="$OPTARG"        ;;
+    D)   DEBUG=true; set -x            ;;
+    h)   usage; exit                   ;;
+    ?|*) echo; usage; exit 5           ;;
+  esac
+done
+shift $((OPTIND-1))
+
+hash="${1:-}"
+test -n "$hash" || { usage; exit 1; }
+
+require_git_repo
+
+parent=$(resolve_parent_branch)
+
+if test "$diff" = "true"; then
+  cmd_diff "$hash" "$parent"
+elif test "$merge" = "true"; then
+  cmd_merge "$hash" "$parent"
+else
+  cmd_create "$hash" "$parent"
+fi
+##
