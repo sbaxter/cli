@@ -155,7 +155,7 @@ _alias mv     || alias mv='mv -i'
 _alias rm     || alias rm='rm -i'
 _alias vi     || alias vi=vim
 _alias blint  || alias blint='shellcheck -s bash'
-_alias c      || alias c='copilot --model claude-opus-4.6 --allow-all-tools --add-dir .'
+_alias c      || alias c='copilot --model claude-opus-4.7 --allow-all-tools --add-dir .'
 # -----------------------------------------------------------------------------
 
 
@@ -269,7 +269,7 @@ function org {
   local color gh_org aws_prefix
   IFS=':' read -r color gh_org aws_prefix <<< "$def"
 
-  export ORG="$name"
+  export ORG="$gh_org"
   export GH_ORG="$gh_org"
   export SYSTEM=""
   export USER_TAG="(\[${!color}\]${name}\[${NO_COLOR}${PROMPT_COLOR}\])"
