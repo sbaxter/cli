@@ -93,8 +93,19 @@ link "$root/vi/vimrc"         "$HOME/.vimrc"
 link "$root/vi/vimrc"         "$HOME/.ideavimrc"
 link "$root/vi/colors/colors" "$HOME/.vim/colors"
 
+if test "$(uname -s)" = Darwin; then
+  link "$root/LaunchAgents/shb.capslock-to-ctrl.plist" \
+       "$HOME/Library/LaunchAgents/shb.capslock-to-ctrl.plist"
+fi
+
 echo "done."
 echo ""
 echo "note: copy and edit gitconfig manually:"
 echo "  cp $root/gitconfig ~/.gitconfig"
+
+if test "$(uname -s)" = Darwin; then
+  echo ""
+  echo "note: apply macOS system defaults (one-time, restarts Dock/Finder):"
+  echo "  ./bin/macos-defaults"
+fi
 ##

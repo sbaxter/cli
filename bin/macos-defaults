@@ -1,0 +1,102 @@
+#!/usr/bin/env bash
+set -e
+test -z "${DEBUG}" || set -x
+
+##
+# parameters
+opts="Dh"
+
+function usage {
+  cat << _usage_
+  $(basename "$0"): apply macOS system defaults (idempotent)
+
+  usage:
+    $(basename "$0") [-$opts]
+
+    D - turn on debug mode.
+    h - you are here.
+
+  note:
+    restarts Dock, Finder, and SystemUIServer so changes take effect.
+    caps-lock → ctrl is applied via the LaunchAgent installed by ./install;
+    this script reloads it if present.
+_usage_
+}
+
+while getopts $opts opt; do
+  case $opt in
+    D)   DEBUG=true; set -x  ;;
+    h)   usage; exit         ;;
+    ?|*) echo; usage; exit 5 ;;
+  esac
+done
+shift $((OPTIND-1))
+##
+
+
+##
+# main
+test "$(uname -s)" = Darwin || { echo "macOS only!" >&2; exit 1; }
+
+echo "applying macOS defaults..."
+
+
+##
+# input: scroll, trackpad
+defaults write -g com.apple.swipescrolldirection                       -bool false
+defaults write -g com.apple.trackpad.scaling                           -float 3
+defaults write    com.apple.AppleMultitouchTrackpad                Clicking -bool true
+defaults write    com.apple.driver.AppleBluetoothMultitouch.trackpad Clicking -bool true
+##
+
+
+##
+# typing: disable substitutions and autocorrect
+defaults write -g NSAutomaticSpellingCorrectionEnabled -bool false
+defaults write -g NSAutomaticCapitalizationEnabled     -bool false
+defaults write -g NSAutomaticDashSubstitutionEnabled   -bool false
+defaults write -g NSAutomaticQuoteSubstitutionEnabled  -bool false
+##
+
+
+##
+# dock: small, autohide, right
+defaults write com.apple.dock autohide    -bool true
+defaults write com.apple.dock tilesize    -int 16
+defaults write com.apple.dock orientation -string right
+##
+
+
+##
+# finder: show everything
+defaults write com.apple.finder AppleShowAllExtensions -bool true
+defaults write com.apple.finder AppleShowAllFiles      -bool true
+defaults write com.apple.finder ShowPathbar            -bool true
+##
+
+
+##
+# screenshots: to clipboard
+defaults write com.apple.screencapture target -string clipboard
+##
+
+
+##
+# caps-lock → ctrl: reload LaunchAgent if installed
+agent="$HOME/Library/LaunchAgents/shb.capslock-to-ctrl.plist"
+if test -f "$agent"; then
+  launchctl bootout "gui/$(id -u)" "$agent" 2>/dev/null || true
+  launchctl bootstrap "gui/$(id -u)" "$agent"
+  echo "  loaded: $agent"
+else
+  echo "  skip: $agent (not installed; run ./install first)" >&2
+fi
+##
+
+
+##
+# apply: restart UI services so visible changes take effect
+killall Dock Finder SystemUIServer 2>/dev/null || true
+##
+
+echo "done."
