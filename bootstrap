@@ -1,0 +1,158 @@
+#!/usr/bin/env bash
+set -eu
+test -z "${DEBUG:-}" || set -x
+
+##
+# parameters
+opts="Dh"
+: "${GIT_ROOT:=$HOME/git/sbaxter}"
+: "${CLI_REPO:=sbaxter/cli}"
+: "${PRIV_REPO:=sbaxter/cli.private}"
+
+function usage {
+  cat << _usage_
+  $(basename "$0"): bootstrap a new Mac from scratch.
+
+  usage:
+    $(basename "$0") [-$opts]
+
+    D - turn on debug mode.
+    h - you are here.
+
+  env:
+    GIT_ROOT  - where to clone repos. default: \$HOME/git/sbaxter
+    CLI_REPO  - public cli repo. default: sbaxter/cli
+    PRIV_REPO - private cli repo. default: sbaxter/cli.private
+
+  steps:
+    1. ensure macOS
+    2. install Homebrew (which installs Xcode command line tools)
+    3. install gh
+    4. authenticate with GitHub (browser; generates + uploads SSH key)
+    5. clone \$CLI_REPO and \$PRIV_REPO into \$GIT_ROOT
+    6. run cli/install and cli.private/install (dotfile symlinks)
+    7. copy cli.private/gitconfig → ~/.gitconfig
+    8. brew bundle both Brewfiles
+    9. apply macOS defaults
+   10. restart iTerm2 if running (safe — bootstrap runs from Terminal.app)
+
+  idempotent: re-running skips steps already done.
+_usage_
+}
+
+while getopts $opts opt; do
+  case $opt in
+    D)   DEBUG=true; set -x  ;;
+    h)   usage; exit         ;;
+    ?|*) echo; usage; exit 5 ;;
+  esac
+done
+shift $((OPTIND-1))
+##
+
+
+##
+# step 1: macOS only
+test "$(uname -s)" = Darwin || { echo "bootstrap: macOS only!" >&2; exit 1; }
+##
+
+
+##
+# step 2: Homebrew (its installer handles Xcode command line tools)
+if ! command -v brew >/dev/null 2>&1; then
+  echo "==> installing Homebrew"
+  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+fi
+# put brew on PATH for this session (covers Apple Silicon + Intel)
+if test -x /opt/homebrew/bin/brew; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif test -x /usr/local/bin/brew; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+##
+
+
+##
+# step 3: gh
+if ! command -v gh >/dev/null 2>&1; then
+  echo "==> installing gh"
+  brew install gh
+fi
+##
+
+
+##
+# step 4: gh auth (interactive — generates SSH key and uploads to GitHub)
+if ! gh auth status >/dev/null 2>&1; then
+  echo "==> authenticating with GitHub (browser will open)"
+  gh auth login --git-protocol ssh --web
+fi
+##
+
+
+##
+# step 5: clone repos
+mkdir -p "$GIT_ROOT"
+if ! test -d "$GIT_ROOT/cli/.git"; then
+  echo "==> cloning $CLI_REPO into $GIT_ROOT/cli"
+  gh repo clone "$CLI_REPO" "$GIT_ROOT/cli"
+fi
+if ! test -d "$GIT_ROOT/cli.private/.git"; then
+  echo "==> cloning $PRIV_REPO into $GIT_ROOT/cli.private"
+  gh repo clone "$PRIV_REPO" "$GIT_ROOT/cli.private"
+fi
+##
+
+
+##
+# step 6: link dotfiles
+echo "==> cli/install"
+"$GIT_ROOT/cli/install" -b .bak
+echo "==> cli.private/install"
+"$GIT_ROOT/cli.private/install" -b .bak
+##
+
+
+##
+# step 7: gitconfig (always pull from cli.private — overwrites local)
+echo "==> copying cli.private/gitconfig → ~/.gitconfig"
+cp -f "$GIT_ROOT/cli.private/gitconfig" "$HOME/.gitconfig"
+##
+
+
+##
+# step 8: brew bundles
+echo "==> brew bundle: cli/Brewfile"
+brew bundle --file="$GIT_ROOT/cli/Brewfile"
+echo "==> brew bundle: cli.private/Brewfile"
+brew bundle --file="$GIT_ROOT/cli.private/Brewfile"
+##
+
+
+##
+# step 9: apply macOS defaults
+echo "==> cli/bin/macos-defaults"
+"$GIT_ROOT/cli/bin/macos-defaults"
+##
+
+
+##
+# step 10: restart iTerm2 if running (bootstrap is invoked from Terminal.app,
+# so killing iTerm2 won't kill our shell)
+if pgrep -q iTerm2; then
+  echo "==> restarting iTerm2 to pick up custom prefs"
+  osascript -e 'tell application "iTerm" to quit' >/dev/null 2>&1 || true
+  # give iTerm a moment to shut down cleanly before relaunching
+  sleep 1
+  open -a iTerm
+fi
+##
+
+
+##
+# done
+echo
+echo "==> bootstrap done."
+echo
+echo "next step: open a new shell session (or 'source ~/.bash_profile')"
+##

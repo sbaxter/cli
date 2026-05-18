@@ -2,6 +2,23 @@
 
 Portable bash configuration. POSIX-minded, shellcheck-clean.
 
+## Bootstrap a new Mac
+
+One-liner for a brand new machine — installs Homebrew, gh, authenticates
+with GitHub (browser), clones `cli` + `cli.private`, links dotfiles,
+installs both Brewfiles, and applies macOS defaults. Idempotent.
+
+```bash
+# trust-and-run
+curl -fsSL https://raw.githubusercontent.com/sbaxter/cli/main/bootstrap | bash
+
+# audit-first
+curl -fsSL https://raw.githubusercontent.com/sbaxter/cli/main/bootstrap -o /tmp/bootstrap
+less /tmp/bootstrap && bash /tmp/bootstrap
+```
+
+See `bootstrap -h` for env-var overrides (`GIT_ROOT`, `CLI_REPO`, `PRIV_REPO`).
+
 ## Install
 
 ```bash
