@@ -1,0 +1,22 @@
+# Minimal Brewfile — lightweight setup for older or lower-spec Macs
+# (e.g. a 2015 Intel MBA on Monterey).
+#
+# No casks (modern casks often require macOS Ventura or newer).
+#
+# Apply: brew bundle --file=Brewfile.lite
+
+# GNU userland (predictable behavior across systems)
+brew "coreutils"
+brew "gawk"
+brew "gnu-getopt"
+brew "gnu-sed"
+
+# modern replacements for find / grep / ls
+brew "fd"
+brew "ripgrep"
+brew "tree"
+
+# essentials
+brew "gh"
+brew "vim"
+brew "wget"

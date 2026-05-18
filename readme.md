@@ -15,9 +15,13 @@ curl -fsSL https://raw.githubusercontent.com/sbaxter/cli/main/bootstrap | bash
 # audit-first
 curl -fsSL https://raw.githubusercontent.com/sbaxter/cli/main/bootstrap -o /tmp/bootstrap
 less /tmp/bootstrap && bash /tmp/bootstrap
+
+# minimal mode (older Macs, kid Macs): skips cli.private, gh auth, gitconfig;
+# uses Brewfile.lite (CLI only, no casks)
+curl -fsSL https://raw.githubusercontent.com/sbaxter/cli/main/bootstrap | bash -s -- -m
 ```
 
-See `bootstrap -h` for env-var overrides (`GIT_ROOT`, `CLI_REPO`, `PRIV_REPO`).
+See `bootstrap -h` for flags and env-var overrides (`GIT_ROOT`, `CLI_REPO`, `PRIV_REPO`).
 
 ## Install
 
@@ -48,6 +52,7 @@ cp gitconfig ~/.gitconfig
 | `vi/vimrc` | `~/.vimrc`, `~/.ideavimrc` | Vim configuration |
 | `vi/colors/` | `~/.vim/colors/` | Vim color schemes |
 | `Brewfile` | (manual) | Homebrew formulae and casks (macOS) |
+| `Brewfile.lite` | (manual; used by `bootstrap -m`) | Minimal Brewfile for older/lightweight Macs |
 | `iterm2/` | (via `bin/macos-defaults`) | iTerm2 preferences dir (macOS) |
 | `LaunchAgents/shb.capslock-to-ctrl.plist` | `~/Library/LaunchAgents/` | Caps Lock → Ctrl via `hidutil` (macOS) |
 

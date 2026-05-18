@@ -4,7 +4,8 @@ test -z "${DEBUG:-}" || set -x
 
 ##
 # parameters
-opts="Dh"
+opts="Dhm"
+minimal=""
 : "${GIT_ROOT:=$HOME/git/sbaxter}"
 : "${CLI_REPO:=sbaxter/cli}"
 : "${PRIV_REPO:=sbaxter/cli.private}"
@@ -18,6 +19,9 @@ function usage {
 
     D - turn on debug mode.
     h - you are here.
+    m - minimal mode for lightweight machines (e.g. older Macs, kids' Macs):
+        skips gh auth, cli.private (clone/install/gitconfig/Brewfile),
+        and uses Brewfile.lite instead of Brewfile.
 
   env:
     GIT_ROOT  - where to clone repos. default: \$HOME/git/sbaxter
@@ -29,11 +33,11 @@ function usage {
     2. cache sudo credentials (Homebrew's installer needs sudo)
     3. install Homebrew (which installs Xcode command line tools)
     4. install gh
-    5. authenticate with GitHub (browser; generates + uploads SSH key)
-    6. clone \$CLI_REPO and \$PRIV_REPO into \$GIT_ROOT
-    7. run cli/install and cli.private/install (dotfile symlinks)
-    8. copy cli.private/gitconfig → ~/.gitconfig
-    9. brew bundle both Brewfiles
+    5. authenticate with GitHub (browser; generates + uploads SSH key)  [skipped with -m]
+    6. clone \$CLI_REPO (+ \$PRIV_REPO unless -m) into \$GIT_ROOT
+    7. run cli/install (+ cli.private/install unless -m)
+    8. copy cli.private/gitconfig → ~/.gitconfig  [skipped with -m]
+    9. brew bundle Brewfile (+ cli.private/Brewfile unless -m; or Brewfile.lite with -m)
    10. apply macOS defaults
    11. restart iTerm2 if running (safe — bootstrap runs from Terminal.app)
 
@@ -45,6 +49,7 @@ while getopts $opts opt; do
   case $opt in
     D)   DEBUG=true; set -x  ;;
     h)   usage; exit         ;;
+    m)   minimal=1           ;;
     ?|*) echo; usage; exit 5 ;;
   esac
 done
@@ -100,21 +105,28 @@ fi
 
 ##
 # step 5: gh auth (interactive — generates SSH key and uploads to GitHub)
-if ! gh auth status >/dev/null 2>&1; then
-  echo "==> authenticating with GitHub (browser will open)"
-  gh auth login --git-protocol ssh --web
+if test -z "$minimal"; then
+  if ! gh auth status >/dev/null 2>&1; then
+    echo "==> authenticating with GitHub (browser will open)"
+    gh auth login --git-protocol ssh --web
+  fi
 fi
 ##
 
 
 ##
-# step 6: clone repos
+# step 6: clone repos. minimal mode uses plain git clone (cli is public,
+# gh auth was skipped); full mode uses gh repo clone for both repos.
 mkdir -p "$GIT_ROOT"
 if ! test -d "$GIT_ROOT/cli/.git"; then
   echo "==> cloning $CLI_REPO into $GIT_ROOT/cli"
-  gh repo clone "$CLI_REPO" "$GIT_ROOT/cli"
+  if test -n "$minimal"; then
+    git clone "https://github.com/$CLI_REPO" "$GIT_ROOT/cli"
+  else
+    gh repo clone "$CLI_REPO" "$GIT_ROOT/cli"
+  fi
 fi
-if ! test -d "$GIT_ROOT/cli.private/.git"; then
+if test -z "$minimal" && ! test -d "$GIT_ROOT/cli.private/.git"; then
   echo "==> cloning $PRIV_REPO into $GIT_ROOT/cli.private"
   gh repo clone "$PRIV_REPO" "$GIT_ROOT/cli.private"
 fi
@@ -125,24 +137,33 @@ fi
 # step 7: link dotfiles
 echo "==> cli/install"
 "$GIT_ROOT/cli/install" -b .bak
-echo "==> cli.private/install"
-"$GIT_ROOT/cli.private/install" -b .bak
+if test -z "$minimal"; then
+  echo "==> cli.private/install"
+  "$GIT_ROOT/cli.private/install" -b .bak
+fi
 ##
 
 
 ##
 # step 8: gitconfig (always pull from cli.private — overwrites local)
-echo "==> copying cli.private/gitconfig → ~/.gitconfig"
-cp -f "$GIT_ROOT/cli.private/gitconfig" "$HOME/.gitconfig"
+if test -z "$minimal"; then
+  echo "==> copying cli.private/gitconfig → ~/.gitconfig"
+  cp -f "$GIT_ROOT/cli.private/gitconfig" "$HOME/.gitconfig"
+fi
 ##
 
 
 ##
 # step 9: brew bundles
-echo "==> brew bundle: cli/Brewfile"
-brew bundle --file="$GIT_ROOT/cli/Brewfile"
-echo "==> brew bundle: cli.private/Brewfile"
-brew bundle --file="$GIT_ROOT/cli.private/Brewfile"
+if test -n "$minimal"; then
+  echo "==> brew bundle: cli/Brewfile.lite"
+  brew bundle --file="$GIT_ROOT/cli/Brewfile.lite"
+else
+  echo "==> brew bundle: cli/Brewfile"
+  brew bundle --file="$GIT_ROOT/cli/Brewfile"
+  echo "==> brew bundle: cli.private/Brewfile"
+  brew bundle --file="$GIT_ROOT/cli.private/Brewfile"
+fi
 ##
 
 
