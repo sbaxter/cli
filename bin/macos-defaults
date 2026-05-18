@@ -82,6 +82,18 @@ defaults write com.apple.screencapture target -string clipboard
 
 
 ##
+# iterm2: load preferences from the dir colocated with this script
+iterm2dir="$(cd "$(dirname "$0")/.." && pwd)/iterm2"
+if test -d "$iterm2dir"; then
+  defaults write com.googlecode.iterm2 LoadPrefsFromCustomFolder -bool true
+  defaults write com.googlecode.iterm2 PrefsCustomFolder         -string "$iterm2dir"
+  echo "  iterm2 prefs: $iterm2dir"
+  pgrep -q iTerm2 && echo "  warn: iTerm2 is running — restart it to pick up new prefs" >&2
+fi
+##
+
+
+##
 # caps-lock → ctrl: reload LaunchAgent if installed
 agent="$HOME/Library/LaunchAgents/shb.capslock-to-ctrl.plist"
 if test -f "$agent"; then

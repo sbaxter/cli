@@ -5,8 +5,10 @@ Portable bash configuration. POSIX-minded, shellcheck-clean.
 ## Install
 
 ```bash
-./install            # create symlinks
-./install -b .bak    # backup existing files first
+./install                          # create symlinks
+./install -b .bak                  # backup existing files first
+brew bundle --file=Brewfile        # install CLI tooling and apps (macOS)
+./bin/macos-defaults               # apply macOS system defaults (macOS)
 ```
 
 **gitconfig** is not installed by the script — copy and edit manually:
@@ -28,6 +30,9 @@ cp gitconfig ~/.gitconfig
 | `hushlogin` | `~/.hushlogin` | Suppress macOS login banner |
 | `vi/vimrc` | `~/.vimrc`, `~/.ideavimrc` | Vim configuration |
 | `vi/colors/` | `~/.vim/colors/` | Vim color schemes |
+| `Brewfile` | (manual) | Homebrew formulae and casks (macOS) |
+| `iterm2/` | (via `bin/macos-defaults`) | iTerm2 preferences dir (macOS) |
+| `LaunchAgents/shb.capslock-to-ctrl.plist` | `~/Library/LaunchAgents/` | Caps Lock → Ctrl via `hidutil` (macOS) |
 
 ## Conventions
 
@@ -91,6 +96,7 @@ Other: `ll` `lla` `ngrep` `vi` `blint` `brup` `pc`
 | `diskusage` | Show disk usage with warning |
 | `extract` | Extract common archive formats |
 | `loop` | Repeat a command at intervals |
+| `macos-defaults` | Apply macOS system defaults (idempotent) |
 | `pg` | Connect to local PostgreSQL |
 | `update` | Pull latest on repos from `$UPDATE_LIST` |
 | `wifi` | Toggle wifi on/off (macOS) |
