@@ -94,6 +94,27 @@ fi
 
 
 ##
+# spotlight: disable Cmd+Space and Cmd+Opt+Space if Alfred is installed.
+# Alfred's bundle is versioned (Alfred 5.app, Alfred 6.app, …) so match by glob.
+# Guarded on Alfred presence — machines without it keep their launcher.
+# (AppleSymbolicHotKeys 64 = Show Spotlight search, 65 = Show Finder search)
+alfred=""
+for app in /Applications/Alfred*.app; do
+  test -d "$app" && alfred="$app" && break
+done
+if test -n "$alfred"; then
+  sk="$HOME/Library/Preferences/com.apple.symbolichotkeys.plist"
+  if test -f "$sk"; then
+    /usr/libexec/PlistBuddy -c "Set :AppleSymbolicHotKeys:64:enabled false" "$sk" 2>/dev/null || true
+    /usr/libexec/PlistBuddy -c "Set :AppleSymbolicHotKeys:65:enabled false" "$sk" 2>/dev/null || true
+    killall cfprefsd 2>/dev/null || true
+    echo "  spotlight: Cmd+Space disabled — bind Alfred to Cmd+Space on first launch"
+  fi
+fi
+##
+
+
+##
 # caps-lock → ctrl: reload LaunchAgent if installed
 agent="$HOME/Library/LaunchAgents/shb.capslock-to-ctrl.plist"
 if test -f "$agent"; then
