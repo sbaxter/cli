@@ -38,8 +38,9 @@ function usage {
     7. run cli/install (+ cli.private/install unless -m)
     8. copy cli.private/gitconfig → ~/.gitconfig  [skipped with -m]
     9. brew bundle Brewfile (+ cli.private/Brewfile unless -m; or Brewfile.lite with -m)
-   10. apply macOS defaults
-   11. restart iTerm2 if running (safe — bootstrap runs from Terminal.app)
+   10. install Claude Code (native binary via claude.ai/install.sh)
+   11. apply macOS defaults
+   12. restart iTerm2 if running (safe — bootstrap runs from Terminal.app)
 
   idempotent: re-running skips steps already done.
 _usage_
@@ -168,14 +169,25 @@ fi
 
 
 ##
-# step 10: apply macOS defaults
+# step 10: Claude Code (native binary). install script is idempotent and
+# also handles updates; binary lands at ~/.local/bin/claude, which may not
+# be on PATH yet during bootstrap, so check the file directly.
+if ! test -x "$HOME/.local/bin/claude"; then
+  echo "==> installing Claude Code"
+  curl -fsSL https://claude.ai/install.sh | bash
+fi
+##
+
+
+##
+# step 11: apply macOS defaults
 echo "==> cli/bin/macos-defaults"
 "$GIT_ROOT/cli/bin/macos-defaults"
 ##
 
 
 ##
-# step 11: restart iTerm2 if running (bootstrap is invoked from Terminal.app,
+# step 12: restart iTerm2 if running (bootstrap is invoked from Terminal.app,
 # so killing iTerm2 won't kill our shell)
 if pgrep -q iTerm2; then
   echo "==> restarting iTerm2 to pick up custom prefs"
