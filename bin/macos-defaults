@@ -60,10 +60,13 @@ defaults write -g NSAutomaticQuoteSubstitutionEnabled  -bool false
 
 
 ##
-# dock: small, autohide, right
-defaults write com.apple.dock autohide    -bool true
-defaults write com.apple.dock tilesize    -int 16
-defaults write com.apple.dock orientation -string right
+# dock: small, autohide, right, empty
+defaults write com.apple.dock autohide          -bool true
+defaults write com.apple.dock tilesize          -int 16
+defaults write com.apple.dock orientation       -string right
+defaults write com.apple.dock show-recents      -bool false
+defaults write com.apple.dock persistent-apps   -array
+defaults write com.apple.dock persistent-others -array
 ##
 
 
@@ -78,6 +81,54 @@ defaults write com.apple.finder ShowPathbar            -bool true
 ##
 # screenshots: to clipboard
 defaults write com.apple.screencapture target -string clipboard
+##
+
+
+##
+# clock: 24-hour time everywhere
+defaults write -g AppleICUForce24HourTime -bool true
+##
+
+
+##
+# appearance: dark mode, green accent + highlight
+defaults write -g AppleInterfaceStyle  -string "Dark"
+defaults write -g AppleAccentColor     -int 3
+defaults write -g AppleHighlightColor  -string "0.752941 0.964706 0.678431 Green"
+##
+
+
+##
+# scroll bars: always visible, click to jump
+defaults write -g AppleShowScrollBars         -string "Always"
+defaults write -g AppleScrollerPagingBehavior -bool true
+##
+
+
+##
+# trackpad gestures: full-screen on 3 fingers, kill the rest
+# applied to both built-in and Magic Trackpad domains.
+# note: gesture changes usually need a logout/login to take full effect.
+for d in com.apple.AppleMultitouchTrackpad com.apple.driver.AppleBluetoothMultitouch.trackpad; do
+  # notification center (two-finger from right edge): off
+  defaults write "$d" TrackpadTwoFingerFromRightEdgeSwipeGesture -int 0
+  # smart zoom (two-finger double-tap): off
+  defaults write "$d" TrackpadTwoFingerDoubleTapGesture -int 0
+  # mission control + app exposé (3- and 4-finger vertical swipes): off
+  defaults write "$d" TrackpadThreeFingerVertSwipeGesture -int 0
+  defaults write "$d" TrackpadFourFingerVertSwipeGesture  -int 0
+  # full-screen app switch: 3-finger horizontal on, 4-finger off
+  defaults write "$d" TrackpadThreeFingerHorizSwipeGesture -int 2
+  defaults write "$d" TrackpadFourFingerHorizSwipeGesture  -int 0
+  # lookup & data detectors (three-finger tap): off
+  defaults write "$d" TrackpadThreeFingerTapGesture -int 0
+  # force click: off
+  defaults write "$d" ForceSuppressed -bool true
+done
+# swipe between pages: off
+defaults write -g AppleEnableSwipeNavigateWithScrolls -bool false
+# force click (global mirror)
+defaults write -g com.apple.trackpad.forceClick -bool false
 ##
 
 
@@ -111,6 +162,49 @@ if test -n "$alfred"; then
     echo "  spotlight: Cmd+Space disabled — bind Alfred to Cmd+Space on first launch"
   fi
 fi
+##
+
+
+##
+# keyboard shortcuts: custom ⇧⌘⌥ bindings + system disables
+# IDs are macOS Tahoe (26) symbolic hotkey IDs; they may drift on major OS upgrades.
+# parameters: (key-char, key-code, modifier-mask). 1703936 = shift+cmd+option.
+sk="$HOME/Library/Preferences/com.apple.symbolichotkeys.plist"
+set_hotkey() {
+  local id=$1 keychar=$2 keycode=$3
+  /usr/libexec/PlistBuddy -c "Delete :AppleSymbolicHotKeys:$id" "$sk" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add    :AppleSymbolicHotKeys:$id dict"                  "$sk"
+  /usr/libexec/PlistBuddy -c "Add    :AppleSymbolicHotKeys:$id:enabled bool true"     "$sk"
+  /usr/libexec/PlistBuddy -c "Add    :AppleSymbolicHotKeys:$id:value dict"            "$sk"
+  /usr/libexec/PlistBuddy -c "Add    :AppleSymbolicHotKeys:$id:value:type string standard" "$sk"
+  /usr/libexec/PlistBuddy -c "Add    :AppleSymbolicHotKeys:$id:value:parameters array" "$sk"
+  /usr/libexec/PlistBuddy -c "Add    :AppleSymbolicHotKeys:$id:value:parameters:0 integer $keychar" "$sk"
+  /usr/libexec/PlistBuddy -c "Add    :AppleSymbolicHotKeys:$id:value:parameters:1 integer $keycode" "$sk"
+  /usr/libexec/PlistBuddy -c "Add    :AppleSymbolicHotKeys:$id:value:parameters:2 integer 1703936" "$sk"
+}
+disable_hotkey() {
+  /usr/libexec/PlistBuddy -c "Set :AppleSymbolicHotKeys:$1:enabled false" "$sk" 2>/dev/null || true
+}
+# enable: custom ⇧⌘⌥ bindings
+set_hotkey 163 110 45   # ⇧⌘⌥N — notification center
+set_hotkey 224 112 35   # ⇧⌘⌥P — presenter overlay (small)
+set_hotkey 237 121 16   # ⇧⌘⌥Y — tile: fill
+set_hotkey 238 106 38   # ⇧⌘⌥J — tile: center
+set_hotkey 240 104  4   # ⇧⌘⌥H — tile: left half
+set_hotkey 241 107 40   # ⇧⌘⌥K — tile: right half
+set_hotkey 242 117 32   # ⇧⌘⌥U — tile: top half
+set_hotkey 243 109 46   # ⇧⌘⌥M — tile: bottom half
+# disable: mission control / spaces — conflicts with iTerm2 + tmux pane nav
+disable_hotkey 32       # ⌃↑   — mission control
+disable_hotkey 33       # ⌃↓   — application windows (app exposé)
+disable_hotkey 36       # ⌘F3  — show desktop
+disable_hotkey 79       # ⌃←   — move left a space
+disable_hotkey 81       # ⌃→   — move right a space
+disable_hotkey 118      # ⌃1   — switch to desktop 1
+# disable: input source switching — conflicts with vim/tmux ⌃-space
+disable_hotkey 60       # ⌃␣   — select previous input source
+disable_hotkey 61       # ⌃⌥␣  — select next input source in menu
+killall cfprefsd 2>/dev/null || true
 ##
 
 
