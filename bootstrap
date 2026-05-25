@@ -42,7 +42,8 @@ function usage {
    11. install Claude Code (native binary via claude.ai/install.sh)
    12. apply macOS defaults
    13. open iTerm2 (restart if running) so custom prefs take effect
-   14. import GPG signing key via cli.private/bin/gpg-restore (if absent)  [skipped with -m]
+   14. run cli.private/bin/gcs (gcloud components + config + auth)  [skipped with -m]
+   15. import GPG signing key via cli.private/bin/gpg-restore (if absent)  [skipped with -m]
 
   idempotent: re-running skips steps already done.
 _usage_
@@ -231,7 +232,19 @@ open -a iTerm
 
 
 ##
-# step 14: import GPG signing key if missing. gpg-restore auto-detects a
+# step 14: gcloud setup via gcs (components + project config + browser auth +
+# docker credHelper + ADC quota project). interactive (browser). non-fatal —
+# bootstrap continues if the user cancels.
+if test -z "$minimal" && test -x "$GIT_ROOT/cli.private/bin/gcs"; then
+  echo
+  echo "==> cli.private/bin/gcs"
+  "$GIT_ROOT/cli.private/bin/gcs" || true
+fi
+##
+
+
+##
+# step 15: import GPG signing key if missing. gpg-restore auto-detects a
 # transferred file in ~/Downloads or prompts. interactive (passphrase).
 if test -z "$minimal"; then
   signingkey=$(git config --global user.signingkey 2>/dev/null || true)
