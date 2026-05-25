@@ -42,6 +42,7 @@ function usage {
    11. install Claude Code (native binary via claude.ai/install.sh)
    12. apply macOS defaults
    13. open iTerm2 (restart if running) so custom prefs take effect
+   14. import GPG signing key via cli.private/bin/gpg-restore (if absent)  [skipped with -m]
 
   idempotent: re-running skips steps already done.
 _usage_
@@ -226,6 +227,20 @@ else
   echo "==> opening iTerm2"
 fi
 open -a iTerm
+##
+
+
+##
+# step 14: import GPG signing key if missing. gpg-restore auto-detects a
+# transferred file in ~/Downloads or prompts. interactive (passphrase).
+if test -z "$minimal"; then
+  signingkey=$(git config --global user.signingkey 2>/dev/null || true)
+  if test -n "$signingkey" && ! gpg --list-secret-keys "$signingkey" >/dev/null 2>&1; then
+    echo
+    echo "==> GPG signing key $signingkey missing — running gpg-restore"
+    "$GIT_ROOT/cli.private/bin/gpg-restore" || true
+  fi
+fi
 ##
 
 
