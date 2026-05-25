@@ -59,6 +59,13 @@ function link {
     fi
   fi
 
+  # refuse to clobber a real directory — let the user migrate by hand
+  if test -d "$target" -a ! -L "$target"; then
+    echo "  warn: $target is a directory; move it aside and re-run" >&2
+    echo "        mv $target ${target}.premigration" >&2
+    return
+  fi
+
   if test -e "$target"; then
     if test -n "$backup"; then
       echo "  backup: $target → ${target}${backup}"
@@ -73,7 +80,7 @@ function link {
   targetDir=$(dirname "$target")
   test -d "$targetDir" || mkdir -p "$targetDir"
 
-  ln -sf "$src" "$target"
+  ln -sfn "$src" "$target"
   echo "  link: $target → $src"
 }
 ##
