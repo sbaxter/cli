@@ -42,8 +42,9 @@ function usage {
    11. install Claude Code (native binary via claude.ai/install.sh)
    12. apply macOS defaults
    13. open iTerm2 (restart if running) so custom prefs take effect
-   14. run cli.private/bin/gcs (gcloud components + config + auth)  [skipped with -m]
-   15. import GPG signing key via cli.private/bin/gpg-restore (if absent)  [skipped with -m]
+   14. run cli.private/bin/nsca (Netskope CA bundle)  [skipped with -m or no STAgent]
+   15. run cli.private/bin/gcs (gcloud components + config + auth)  [skipped with -m]
+   16. import GPG signing key via cli.private/bin/gpg-restore (if absent)  [skipped with -m]
 
   idempotent: re-running skips steps already done.
 _usage_
@@ -232,7 +233,30 @@ open -a iTerm
 
 
 ##
-# step 14: gcloud setup via gcs (components + project config + browser auth +
+# step 14: Netskope CA bundle. nsca writes ~/.config/netskope/ca-bundle.pem
+# (Mozilla/system roots + MDM + Netskope) and netskope-ca.pem (bare CA for
+# additive use cases like dvcn). gated on STAgent being present so this is
+# a no-op on non-corporate Macs. exports the bundle into bootstrap's env so
+# subsequent steps that read REQUESTS_CA_BUNDLE etc. inherit it.
+if test -z "$minimal" \
+   && test -d "/Library/Application Support/Netskope/STAgent" \
+   && test -x "$GIT_ROOT/cli.private/bin/nsca"; then
+  echo
+  echo "==> cli.private/bin/nsca"
+  "$GIT_ROOT/cli.private/bin/nsca"
+  _ns="$HOME/.config/netskope/ca-bundle.pem"
+  if test -f "$_ns"; then
+    export REQUESTS_CA_BUNDLE="$_ns"
+    export CURL_CA_BUNDLE="$_ns"
+    export NODE_EXTRA_CA_CERTS="$_ns"
+  fi
+  unset _ns
+fi
+##
+
+
+##
+# step 15: gcloud setup via gcs (components + project config + browser auth +
 # docker credHelper + ADC quota project). interactive (browser). non-fatal —
 # bootstrap continues if the user cancels.
 if test -z "$minimal" && test -x "$GIT_ROOT/cli.private/bin/gcs"; then
@@ -244,7 +268,7 @@ fi
 
 
 ##
-# step 15: import GPG signing key if missing. gpg-restore auto-detects a
+# step 16: import GPG signing key if missing. gpg-restore auto-detects a
 # transferred file in ~/Downloads or prompts. interactive (passphrase).
 if test -z "$minimal"; then
   signingkey=$(git config --global user.signingkey 2>/dev/null || true)
