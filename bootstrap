@@ -9,6 +9,7 @@ minimal=""
 : "${GIT_ROOT:=$HOME/git/sbaxter}"
 : "${CLI_REPO:=sbaxter/cli}"
 : "${PRIV_REPO:=sbaxter/cli.private}"
+: "${MEMORY_REPO:=sbaxter/memory}"
 
 function usage {
   cat << _usage_
@@ -24,9 +25,10 @@ function usage {
         and uses Brewfile.lite instead of Brewfile.
 
   env:
-    GIT_ROOT  - where to clone repos. default: \$HOME/git/sbaxter
-    CLI_REPO  - public cli repo. default: sbaxter/cli
-    PRIV_REPO - private cli repo. default: sbaxter/cli.private
+    GIT_ROOT    - where to clone repos. default: \$HOME/git/sbaxter
+    CLI_REPO    - public cli repo.  default: sbaxter/cli
+    PRIV_REPO   - private cli repo. default: sbaxter/cli.private
+    MEMORY_REPO - claude memory repo. default: sbaxter/memory
 
   steps:
     1. ensure macOS
@@ -34,17 +36,18 @@ function usage {
     3. install Homebrew (which installs Xcode command line tools)
     4. install gh
     5. authenticate with GitHub (browser; generates + uploads SSH key)  [skipped with -m]
-    6. clone \$CLI_REPO (+ \$PRIV_REPO unless -m) into \$GIT_ROOT
+    6. clone \$CLI_REPO (+ \$PRIV_REPO + \$MEMORY_REPO unless -m) into \$GIT_ROOT
     7. run cli/install (+ cli.private/install unless -m)
-    8. copy cli.private/gitconfig → ~/.gitconfig  [skipped if exists or with -m]
-    9. brew bundle Brewfile (+ cli.private/Brewfile unless -m; or Brewfile.lite with -m)
-   10. initialize rust toolchain (rustup stable + cargo-deny, cargo-release, cargo-cyclonedx)  [skipped with -m]
-   11. install Claude Code (native binary via claude.ai/install.sh)
-   12. apply macOS defaults
-   13. open iTerm2 (restart if running) so custom prefs take effect
-   14. run cli.private/bin/nsca (Netskope CA bundle)  [skipped with -m or no STAgent]
-   15. run cli.private/bin/gcs (gcloud components + config + auth)  [skipped with -m]
-   16. import GPG signing key via cli.private/bin/gpg-restore (if absent)  [skipped with -m]
+    8. run cli.private/bin/mems (wire ~/.claude memory ↔ sbaxter/memory)  [skipped with -m]
+    9. copy cli.private/gitconfig → ~/.gitconfig  [skipped if exists or with -m]
+   10. brew bundle Brewfile (+ cli.private/Brewfile unless -m; or Brewfile.lite with -m)
+   11. initialize rust toolchain (rustup stable + cargo-deny, cargo-release, cargo-cyclonedx)  [skipped with -m]
+   12. install Claude Code (native binary via claude.ai/install.sh)
+   13. apply macOS defaults
+   14. open iTerm2 (restart if running) so custom prefs take effect
+   15. run cli.private/bin/nsca (Netskope CA bundle)  [skipped with -m or no STAgent]
+   16. run cli.private/bin/gcs (gcloud components + config + auth)  [skipped with -m]
+   17. import GPG signing key via cli.private/bin/gpg-restore (if absent)  [skipped with -m]
 
   idempotent: re-running skips steps already done.
 _usage_
@@ -135,6 +138,10 @@ if test -z "$minimal" && ! test -d "$GIT_ROOT/cli.private/.git"; then
   echo "==> cloning $PRIV_REPO into $GIT_ROOT/cli.private"
   gh repo clone "$PRIV_REPO" "$GIT_ROOT/cli.private"
 fi
+if test -z "$minimal" && ! test -d "$GIT_ROOT/memory/.git"; then
+  echo "==> cloning $MEMORY_REPO into $GIT_ROOT/memory"
+  gh repo clone "$MEMORY_REPO" "$GIT_ROOT/memory"
+fi
 ##
 
 
@@ -150,7 +157,20 @@ fi
 
 
 ##
-# step 8: gitconfig — seed from cli.private only if ~/.gitconfig doesn't
+# step 8: wire ~/.claude memory dirs to the sbaxter/memory repo via mems.
+# idempotent — promotes any local memory dirs into the repo, then ensures
+# symlinks back. skipped if mems script or memory repo aren't present.
+if test -z "$minimal" \
+   && test -x "$GIT_ROOT/cli.private/bin/mems" \
+   && test -d "$GIT_ROOT/memory"; then
+  echo "==> cli.private/bin/mems"
+  "$GIT_ROOT/cli.private/bin/mems"
+fi
+##
+
+
+##
+# step 9: gitconfig — seed from cli.private only if ~/.gitconfig doesn't
 # already exist. preserves local edits on re-runs; to force a refresh,
 # remove ~/.gitconfig and re-run bootstrap.
 if test -z "$minimal" && ! test -e "$HOME/.gitconfig"; then
@@ -161,7 +181,7 @@ fi
 
 
 ##
-# step 9: brew bundles
+# step 10: brew bundles
 if test -n "$minimal"; then
   echo "==> brew bundle: cli/Brewfile.lite"
   brew bundle --file="$GIT_ROOT/cli/Brewfile.lite"
@@ -175,7 +195,7 @@ fi
 
 
 ##
-# step 10: rust toolchain. rustup is brewed but installs no toolchain;
+# step 11: rust toolchain. rustup is brewed but installs no toolchain;
 # bootstrap stable + the cargo subcommands the dotfiles depend on
 # (cargo-deny is required by the ci() function in cli.private/bash_profile).
 # --no-modify-path because bash_profile already sources ~/.cargo/env.
@@ -199,7 +219,7 @@ fi
 
 
 ##
-# step 11: Claude Code (native binary). install script is idempotent and
+# step 12: Claude Code (native binary). install script is idempotent and
 # also handles updates; binary lands at ~/.local/bin/claude, which may not
 # be on PATH yet during bootstrap, so check the file directly.
 if ! test -x "$HOME/.local/bin/claude"; then
@@ -210,14 +230,14 @@ fi
 
 
 ##
-# step 12: apply macOS defaults
+# step 13: apply macOS defaults
 echo "==> cli/bin/macos-defaults"
 "$GIT_ROOT/cli/bin/macos-defaults"
 ##
 
 
 ##
-# step 13: open iTerm2 (restart if running) so the custom prefs folder
+# step 14: open iTerm2 (restart if running) so the custom prefs folder
 # wired up by macos-defaults takes effect. bootstrap is invoked from
 # Terminal.app, so killing iTerm2 won't kill our shell.
 if pgrep -q iTerm2; then
@@ -233,7 +253,7 @@ open -a iTerm
 
 
 ##
-# step 14: Netskope CA bundle. nsca writes ~/.config/netskope/ca-bundle.pem
+# step 15: Netskope CA bundle. nsca writes ~/.config/netskope/ca-bundle.pem
 # (Mozilla/system roots + MDM + Netskope) and netskope-ca.pem (bare CA for
 # additive use cases like dvcn). gated on STAgent being present so this is
 # a no-op on non-corporate Macs. exports the bundle into bootstrap's env so
@@ -256,7 +276,7 @@ fi
 
 
 ##
-# step 15: gcloud setup via gcs (components + project config + browser auth +
+# step 16: gcloud setup via gcs (components + project config + browser auth +
 # docker credHelper + ADC quota project). interactive (browser). non-fatal —
 # bootstrap continues if the user cancels.
 if test -z "$minimal" && test -x "$GIT_ROOT/cli.private/bin/gcs"; then
@@ -268,7 +288,7 @@ fi
 
 
 ##
-# step 16: import GPG signing key if missing. gpg-restore auto-detects a
+# step 17: import GPG signing key if missing. gpg-restore auto-detects a
 # transferred file in ~/Downloads or prompts. interactive (passphrase).
 if test -z "$minimal"; then
   signingkey=$(git config --global user.signingkey 2>/dev/null || true)
