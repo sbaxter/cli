@@ -628,6 +628,64 @@ export JAVA_HOME
 # -----------------------------------------------------------------------------
 
 
+# AWS
+# -----------------------------------------------------------------------------
+# awsp: list or switch the current shell's AWS_PROFILE.
+#   awsp          list profiles in ~/.aws/config (current marked with *)
+#   awsp <name>   export AWS_PROFILE=<name> and verify with awsw
+function awsp {
+  local p="${1:-}"
+  if test ! -f "$HOME/.aws/config"; then
+    echo "no ~/.aws/config — run awso first" >&2
+    return 1
+  fi
+  if test -z "$p"; then
+    local current="${AWS_PROFILE:-default}"
+    sed -nE 's/^\[default\]$/default/p; s/^\[profile +(.+)\]$/\1/p' "$HOME/.aws/config" \
+      | sort -u \
+      | awk -v cur="$current" '{ if ($0 == cur) print "* " $0; else print "  " $0 }'
+    return
+  fi
+  export AWS_PROFILE="$p"
+  awsw
+}
+
+function _awsp_complete {
+  local cur="${COMP_WORDS[COMP_CWORD]}"
+  local profiles
+  profiles=$(sed -nE 's/^\[default\]$/default/p; s/^\[profile +(.+)\]$/\1/p' \
+    "$HOME/.aws/config" 2>/dev/null | sort -u)
+  # shellcheck disable=SC2207
+  COMPREPLY=($(compgen -W "$profiles" -- "$cur"))
+}
+complete -F _awsp_complete awsp
+
+# awsw: print sts get-caller-identity for the current profile. on token
+# expiry, run `aws sso login` for the session configured in ~/.aws/config
+# and retry once.
+function awsw {
+  local out
+  if out=$(aws sts get-caller-identity --output text --query 'Arn' 2>&1); then
+    echo "${AWS_PROFILE:-default}: $out"
+    return
+  fi
+  if echo "$out" | grep -qiE 'token|expired|sso session|unauthorized'; then
+    local session
+    session=$(sed -nE 's/^\[sso-session +(.+)\]$/\1/p' "$HOME/.aws/config" \
+      2>/dev/null | head -1)
+    if test -n "$session"; then
+      echo "creds expired; running aws sso login --sso-session $session" >&2
+      aws sso login --sso-session "$session"
+      echo "${AWS_PROFILE:-default}: $(aws sts get-caller-identity --output text --query 'Arn')"
+      return
+    fi
+  fi
+  echo "$out" >&2
+  return 1
+}
+# -----------------------------------------------------------------------------
+
+
 # COMPLETIONS
 # -----------------------------------------------------------------------------
 ! type aws_completer >/dev/null 2>&1 || complete -C aws_completer aws
