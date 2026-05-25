@@ -7,9 +7,8 @@ test -z "${DEBUG:-}" || set -x
 opts="Dhm"
 minimal=""
 : "${GIT_ROOT:=$HOME/git/sbaxter}"
+: "${UMBRELLA_REPO:=sbaxter/sbaxter}"
 : "${CLI_REPO:=sbaxter/cli}"
-: "${PRIV_REPO:=sbaxter/cli.private}"
-: "${MEMORY_REPO:=sbaxter/memory}"
 
 function usage {
   cat << _usage_
@@ -25,10 +24,9 @@ function usage {
         and uses Brewfile.lite instead of Brewfile.
 
   env:
-    GIT_ROOT    - where to clone repos. default: \$HOME/git/sbaxter
-    CLI_REPO    - public cli repo.  default: sbaxter/cli
-    PRIV_REPO   - private cli repo. default: sbaxter/cli.private
-    MEMORY_REPO - claude memory repo. default: sbaxter/memory
+    GIT_ROOT      - umbrella checkout location. default: \$HOME/git/sbaxter
+    UMBRELLA_REPO - multi-repo orchestrator (full mode). default: sbaxter/sbaxter
+    CLI_REPO      - public cli repo (minimal mode only). default: sbaxter/cli
 
   steps:
     1. ensure macOS
@@ -36,7 +34,8 @@ function usage {
     3. install Homebrew (which installs Xcode command line tools)
     4. install gh
     5. authenticate with GitHub (browser; generates + uploads SSH key)  [skipped with -m]
-    6. clone \$CLI_REPO (+ \$PRIV_REPO + \$MEMORY_REPO unless -m) into \$GIT_ROOT
+    6. clone \$UMBRELLA_REPO into \$GIT_ROOT, then 'make clone/group/home'
+       [minimal: clone \$CLI_REPO into \$GIT_ROOT/cli, no umbrella]
     7. run cli/install (+ cli.private/install unless -m)
     8. run cli.private/bin/mems (wire ~/.claude memory ↔ sbaxter/memory)  [skipped with -m]
     9. copy cli.private/gitconfig → ~/.gitconfig  [skipped if exists or with -m]
@@ -123,24 +122,25 @@ fi
 
 
 ##
-# step 6: clone repos. minimal mode uses plain git clone (cli is public,
-# gh auth was skipped); full mode uses gh repo clone for both repos.
-mkdir -p "$GIT_ROOT"
-if ! test -d "$GIT_ROOT/cli/.git"; then
-  echo "==> cloning $CLI_REPO into $GIT_ROOT/cli"
-  if test -n "$minimal"; then
+# step 6: clone repos.
+# minimal mode: plain git clone of cli (public; gh auth was skipped).
+# full mode: clone the umbrella into $GIT_ROOT, then let its own tooling
+# (make clone/group/home → bin/clone-one.sh per entry in etc/projects.toml)
+# pull cli, cli.private, memory. umbrella is source of truth for membership.
+mkdir -p "$(dirname "$GIT_ROOT")"
+if test -n "$minimal"; then
+  if ! test -d "$GIT_ROOT/cli/.git"; then
+    echo "==> cloning $CLI_REPO into $GIT_ROOT/cli"
+    mkdir -p "$GIT_ROOT"
     git clone "https://github.com/$CLI_REPO" "$GIT_ROOT/cli"
-  else
-    gh repo clone "$CLI_REPO" "$GIT_ROOT/cli"
   fi
-fi
-if test -z "$minimal" && ! test -d "$GIT_ROOT/cli.private/.git"; then
-  echo "==> cloning $PRIV_REPO into $GIT_ROOT/cli.private"
-  gh repo clone "$PRIV_REPO" "$GIT_ROOT/cli.private"
-fi
-if test -z "$minimal" && ! test -d "$GIT_ROOT/memory/.git"; then
-  echo "==> cloning $MEMORY_REPO into $GIT_ROOT/memory"
-  gh repo clone "$MEMORY_REPO" "$GIT_ROOT/memory"
+else
+  if ! test -d "$GIT_ROOT/.git"; then
+    echo "==> cloning $UMBRELLA_REPO into $GIT_ROOT"
+    gh repo clone "$UMBRELLA_REPO" "$GIT_ROOT"
+  fi
+  echo "==> make -C $GIT_ROOT clone/group/home"
+  make -C "$GIT_ROOT" clone/group/home
 fi
 ##
 
