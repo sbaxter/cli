@@ -111,28 +111,63 @@ fi
 
 
 ##
-# step 5: gh auth (interactive — generates SSH key and uploads to GitHub)
+# step 5: gh auth (interactive — generates SSH key and uploads to GitHub).
+# request admin:public_key upfront so step 5b can manage authentication
+# keys without a second browser dance via 'gh auth refresh'.
 if test -z "$minimal"; then
-  if ! gh auth status >/dev/null 2>&1; then
+  if ! gh auth status 2>&1 | grep -q 'admin:public_key'; then
     echo "==> authenticating with GitHub (browser will open)"
-    gh auth login --git-protocol ssh --web
+    gh auth login --git-protocol ssh --web -s admin:public_key
   fi
 fi
 ##
 
 
 ##
-# step 5b: seed ~/.ssh/known_hosts with github.com host keys so the first
-# SSH clone doesn't stall on a host-key prompt (or fail outright in a
-# non-TTY context). idempotent — skips keys already present.
+# step 5b: SSH plumbing for github.com. gh auth login --git-protocol ssh
+# *prompts* to generate+upload a key but is easy to bypass interactively,
+# leaving auth recorded with no key on GitHub — subsequent SSH clones then
+# fail with "Permission denied (publickey)". make all three guarantees
+# explicit and idempotent here:
+#   a. known_hosts has github.com (no host-key prompt on first clone)
+#   b. a local ed25519 key exists and is loaded into the macOS keychain
+#   c. that key's public half is uploaded to GitHub
 if test -z "$minimal"; then
   mkdir -p "$HOME/.ssh"
   chmod 700 "$HOME/.ssh"
   touch "$HOME/.ssh/known_hosts"
   chmod 600 "$HOME/.ssh/known_hosts"
+
+  # a. known_hosts
   if ! ssh-keygen -F github.com -f "$HOME/.ssh/known_hosts" >/dev/null 2>&1; then
     echo "==> seeding github.com host keys into ~/.ssh/known_hosts"
     ssh-keyscan -t rsa,ecdsa,ed25519 github.com 2>/dev/null >> "$HOME/.ssh/known_hosts"
+  fi
+
+  # b. local ed25519 key + macOS keychain. ssh-add is idempotent —
+  # loading an already-loaded key is a no-op — so skip the membership
+  # check and just always run it.
+  ssh_key="$HOME/.ssh/id_ed25519"
+  if ! test -f "$ssh_key"; then
+    echo "==> generating ed25519 SSH key at $ssh_key"
+    ssh-keygen -t ed25519 -f "$ssh_key" -N "" -C "$(whoami)@$(hostname -s)"
+  fi
+  echo "==> loading $ssh_key into ssh-agent (macOS keychain)"
+  ssh-add --apple-use-keychain "$ssh_key" 2>/dev/null \
+    || ssh-add -K "$ssh_key" 2>/dev/null \
+    || ssh-add "$ssh_key"
+
+  # c. upload to GitHub. scope was granted in step 5. match by key body
+  # (field 2) so a rename on GitHub doesn't cause dupes.
+  key_body=$(cut -d' ' -f2 "$ssh_key.pub")
+  if ! gh ssh-key list 2>/dev/null | grep -qF "$key_body"; then
+    echo "==> uploading $ssh_key.pub to GitHub"
+    gh ssh-key add "$ssh_key.pub" --title "$(whoami)@$(hostname -s) (bootstrap)"
+  fi
+
+  # verify — ssh -T git@github.com exits 1 on success with a greeting
+  if ! ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -T git@github.com 2>&1 | grep -q 'successfully authenticated'; then
+    echo "warning: ssh -T git@github.com did not authenticate; clones may fail" >&2
   fi
 fi
 ##
