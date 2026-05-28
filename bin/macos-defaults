@@ -145,6 +145,22 @@ fi
 
 
 ##
+# shell: ensure login shell is bash (macOS default is zsh).
+# probes the Directory Services record, not $SHELL, so re-runs are idempotent.
+target_shell="/bin/bash"
+current_shell="$(dscl . -read "/Users/$USER" UserShell 2>/dev/null | awk '{print $2}')"
+if test "$current_shell" = "$target_shell"; then
+  echo "  shell: already $target_shell"
+elif ! grep -qx "$target_shell" /etc/shells; then
+  echo "  warn: $target_shell not in /etc/shells — skipping" >&2
+else
+  echo "  shell: changing $current_shell → $target_shell (will prompt for password)"
+  chsh -s "$target_shell"
+fi
+##
+
+
+##
 # spotlight: disable Cmd+Space and Cmd+Opt+Space if Alfred is installed.
 # Alfred's bundle is versioned (Alfred 5.app, Alfred 6.app, …) so match by glob.
 # Guarded on Alfred presence — machines without it keep their launcher.
