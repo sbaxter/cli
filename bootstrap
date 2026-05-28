@@ -35,6 +35,7 @@ function usage {
     4. install gh
     5. authenticate with GitHub (browser; generates + uploads SSH key)  [skipped with -m]
     6. clone \$UMBRELLA_REPO into \$GIT_ROOT, then 'make clone/group/home'
+       (preflight: brew install python@3.13 if /usr/bin/python3 lacks tomllib)
        [minimal: clone \$CLI_REPO into \$GIT_ROOT/cli, no umbrella]
     7. run cli/install (+ cli.private/install unless -m)
     8. run cli.private/bin/mems (wire ~/.claude memory ↔ sbaxter/memory)  [skipped with -m]
@@ -165,6 +166,19 @@ if test -z "$minimal"; then
     echo "==> uploading $ssh_key.pub to GitHub"
     gh ssh-key add "$ssh_key.pub" --title "$(whoami)@$(hostname -s) (bootstrap)"
   fi
+fi
+##
+
+
+##
+# step 5c: python with tomllib. umbrella's bin/_projects.py (invoked by
+# `make clone/group/home` in step 6) needs tomllib (Python 3.11+) or tomli;
+# Apple's /usr/bin/python3 is 3.9 on fresh Macs and has neither. cli/Brewfile
+# installs python@3.13 but doesn't run until step 10, so install ahead of
+# need. minimal mode skips the umbrella+make path entirely.
+if test -z "$minimal" && ! python3 -c 'import tomllib' 2>/dev/null; then
+  echo "==> installing python@3.13 (needed by umbrella's make)"
+  brew install python@3.13
 fi
 ##
 
