@@ -122,6 +122,23 @@ fi
 
 
 ##
+# step 5b: seed ~/.ssh/known_hosts with github.com host keys so the first
+# SSH clone doesn't stall on a host-key prompt (or fail outright in a
+# non-TTY context). idempotent — skips keys already present.
+if test -z "$minimal"; then
+  mkdir -p "$HOME/.ssh"
+  chmod 700 "$HOME/.ssh"
+  touch "$HOME/.ssh/known_hosts"
+  chmod 600 "$HOME/.ssh/known_hosts"
+  if ! ssh-keygen -F github.com -f "$HOME/.ssh/known_hosts" >/dev/null 2>&1; then
+    echo "==> seeding github.com host keys into ~/.ssh/known_hosts"
+    ssh-keyscan -t rsa,ecdsa,ed25519 github.com 2>/dev/null >> "$HOME/.ssh/known_hosts"
+  fi
+fi
+##
+
+
+##
 # step 6: clone repos.
 # minimal mode: plain git clone of cli (public; gh auth was skipped).
 # full mode: clone the umbrella into $GIT_ROOT, then let its own tooling
