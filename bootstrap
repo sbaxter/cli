@@ -165,11 +165,6 @@ if test -z "$minimal"; then
     echo "==> uploading $ssh_key.pub to GitHub"
     gh ssh-key add "$ssh_key.pub" --title "$(whoami)@$(hostname -s) (bootstrap)"
   fi
-
-  # verify — ssh -T git@github.com exits 1 on success with a greeting
-  if ! ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -T git@github.com 2>&1 | grep -q 'successfully authenticated'; then
-    echo "warning: ssh -T git@github.com did not authenticate; clones may fail" >&2
-  fi
 fi
 ##
 
