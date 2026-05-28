@@ -155,7 +155,8 @@ if test -z "$minimal"; then
   echo "==> loading $ssh_key into ssh-agent (macOS keychain)"
   ssh-add --apple-use-keychain "$ssh_key" 2>/dev/null \
     || ssh-add -K "$ssh_key" 2>/dev/null \
-    || ssh-add "$ssh_key"
+    || ssh-add "$ssh_key" 2>/dev/null \
+    || echo "warning: ssh-add failed; key generated but not loaded into agent" >&2
 
   # c. upload to GitHub. scope was granted in step 5. match by key body
   # (field 2) so a rename on GitHub doesn't cause dupes.
