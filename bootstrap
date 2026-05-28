@@ -265,13 +265,17 @@ fi
 
 
 ##
-# step 11: rust toolchain. rustup is brewed but installs no toolchain;
-# bootstrap stable + the cargo subcommands the dotfiles depend on
-# (cargo-deny is required by the ci() function in cli.private/bash_profile).
-# --no-modify-path because bash_profile already sources ~/.cargo/env.
+# step 11: rust toolchain. install rustup via the upstream installer
+# (rust-lang.org's canonical path) rather than brew — the brew formula is
+# keg-only and pins a single toolchain, defeating rust-toolchain.toml pinning
+# and component management. bootstrap stable + the cargo subcommands the
+# dotfiles depend on (cargo-deny is required by the ci() function in
+# cli.private/bash_profile). --no-modify-path because bash_profile already
+# sources ~/.cargo/env.
 if test -z "$minimal" && ! test -x "$HOME/.cargo/bin/rustc"; then
   echo "==> initializing rust toolchain"
-  rustup-init -y --default-toolchain stable --profile default --no-modify-path
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+    | sh -s -- -y --default-toolchain stable --profile default --no-modify-path
 fi
 # shellcheck disable=SC1091
 test -f "$HOME/.cargo/env" && source "$HOME/.cargo/env"
