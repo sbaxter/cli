@@ -379,7 +379,7 @@
 	<key>Default Bookmark Guid</key>
 	<string>9A351A75-CE6C-409E-B695-AADDA081D47F</string>
 	<key>Default Browser Profile Guid</key>
-	<string>9A351A75-CE6C-409E-B695-AADDA081D47F</string>
+	<string>CCFE43A5-C668-4888-95BB-D09A31ACEF02</string>
 	<key>DimBackgroundWindows</key>
 	<false/>
 	<key>EnableDivisionView</key>
@@ -1568,8 +1568,6 @@
 				<key>Red Component</key>
 				<real>0.99215686274509807</real>
 			</dict>
-			<key>Background Image Location</key>
-			<string></string>
 			<key>Badge Color</key>
 			<dict>
 				<key>Alpha Component</key>
@@ -1814,6 +1812,8 @@
 	<false/>
 	<key>SoundForEsc</key>
 	<false/>
+	<key>StretchTabsToFillBar</key>
+	<true/>
 	<key>TabsHaveCloseButton</key>
 	<false/>
 	<key>TripleClickSelectsFullWrappedLines</key>
@@ -1842,5 +1842,7 @@
 	<integer>0</integer>
 	<key>kCPKSelectionViewShowHSBTextFieldsKey</key>
 	<false/>
+	<key>preferIntegratedGPU</key>
+	<true/>
 </dict>
 </plist>
