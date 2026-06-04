@@ -155,7 +155,7 @@ _alias mv     || alias mv='mv -i'
 _alias rm     || alias rm='rm -i'
 _alias vi     || alias vi=vim
 _alias blint  || alias blint='shellcheck -s bash'
-_alias c      || alias c='copilot --model claude-opus-4.7 --allow-all-tools --add-dir .'
+_alias c      || alias c='copilot --model claude-opus-4.8 --allow-all-tools --add-dir .'
 # -----------------------------------------------------------------------------
 
 
