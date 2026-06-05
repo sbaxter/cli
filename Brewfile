@@ -5,6 +5,7 @@
 brew "actionlint"
 brew "ansiweather"
 brew "automake"
+brew "bash"
 brew "bash_unit"
 brew "bindgen"
 brew "cmake"
