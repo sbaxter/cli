@@ -16,10 +16,12 @@
 	<integer>2</integer>
 	<key>AIVectorStore</key>
 	<integer>0</integer>
+	<key>AdjustWindowForFontSizeChange</key>
+	<false/>
 	<key>AiMaxTokens</key>
-	<integer>400000</integer>
+	<integer>1050000</integer>
 	<key>AiModel</key>
-	<string>gpt-5.2</string>
+	<string>gpt-5.5</string>
 	<key>AiResponseMaxTokens</key>
 	<integer>128000</integer>
 	<key>AitermURL</key>
@@ -379,7 +381,7 @@
 	<key>Default Bookmark Guid</key>
 	<string>9A351A75-CE6C-409E-B695-AADDA081D47F</string>
 	<key>Default Browser Profile Guid</key>
-	<string>CCFE43A5-C668-4888-95BB-D09A31ACEF02</string>
+	<string>9A351A75-CE6C-409E-B695-AADDA081D47F</string>
 	<key>DimBackgroundWindows</key>
 	<false/>
 	<key>EnableDivisionView</key>
@@ -389,6 +391,8 @@
 	<key>HapticFeedbackForEsc</key>
 	<false/>
 	<key>HideActivityIndicator</key>
+	<true/>
+	<key>HideMenuBarInFullscreen</key>
 	<true/>
 	<key>HideScrollbar</key>
 	<false/>
@@ -654,8 +658,6 @@
 				<key>Red Component</key>
 				<real>0.0</real>
 			</dict>
-			<key>Background Image Location</key>
-			<string></string>
 			<key>Badge Color</key>
 			<dict>
 				<key>Alpha Component</key>
@@ -693,7 +695,7 @@
 			<key>Columns</key>
 			<integer>80</integer>
 			<key>Command</key>
-			<string></string>
+			<string>/bin/bash</string>
 			<key>Cursor Color</key>
 			<dict>
 				<key>Alpha Component</key>
@@ -879,7 +881,7 @@
 			<key>Visual Bell</key>
 			<false/>
 			<key>Window Type</key>
-			<integer>0</integer>
+			<integer>1</integer>
 			<key>Working Directory</key>
 			<string></string>
 		</dict>
@@ -1568,6 +1570,8 @@
 				<key>Red Component</key>
 				<real>0.99215686274509807</real>
 			</dict>
+			<key>Background Image Location</key>
+			<string></string>
 			<key>Badge Color</key>
 			<dict>
 				<key>Alpha Component</key>
@@ -1804,6 +1808,8 @@
 	<true/>
 	<key>QuitWhenAllWindowsClosed</key>
 	<true/>
+	<key>SeparateWindowTitlePerTab</key>
+	<true/>
 	<key>ShowFullScreenTabBar</key>
 	<false/>
 	<key>ShowNewOutputIndicator</key>
@@ -1812,8 +1818,6 @@
 	<false/>
 	<key>SoundForEsc</key>
 	<false/>
-	<key>StretchTabsToFillBar</key>
-	<true/>
 	<key>TabsHaveCloseButton</key>
 	<false/>
 	<key>TripleClickSelectsFullWrappedLines</key>
@@ -1842,7 +1846,5 @@
 	<integer>0</integer>
 	<key>kCPKSelectionViewShowHSBTextFieldsKey</key>
 	<false/>
-	<key>preferIntegratedGPU</key>
-	<true/>
 </dict>
 </plist>
