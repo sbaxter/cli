@@ -608,7 +608,7 @@ if test "$(uname -s)" = Darwin; then
   test -x $brew || brew=/usr/local/bin/brew
   if test -x $brew; then
     eval "$($brew shellenv)"
-    alias brup="brew upgrade && brew cleanup"
+    alias brup="brew upgrade --no-ask && brew cleanup"
   fi
 elif type apt-get >/dev/null 2>&1; then
   alias brup="sudo apt-get update && sudo apt-get upgrade"
