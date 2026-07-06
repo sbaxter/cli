@@ -431,34 +431,51 @@ function listenports {
 
 # TEXT PROCESSING
 # -----------------------------------------------------------------------------
+
+# sedi: portable in-place sed. GNU and BSD sed take incompatible -i syntax
+# (GNU: `sed -i SCRIPT f`; BSD: `sed -i '' SCRIPT f`), so edit through a
+# temp file and sidestep -i entirely — the same idiom mdfix already uses.
+# keeps these helpers working on both the Mac and Linux userlands.
+#   sedi <script> <file>...
+function sedi {
+  local script="$1"; shift
+  local file tmp
+  for file in "$@"; do
+    tmp="${file}.sedi.$$"
+    sed "$script" "$file" > "$tmp" && mv -f "$tmp" "$file"
+  done
+}
+
 function dedup {
-  sed -i '$!N; /^\(.*\)\n\1$/!P; D' "$1"
+  sedi '$!N; /^\(.*\)\n\1$/!P; D' "$1"
 }
 
 function upcase {
-  sed -i 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/' "$1"
+  sedi 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/' "$1"
 }
 
 function downcase {
-  sed -i 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' "$1"
+  sedi 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' "$1"
 }
 
 function unDOS {
-  sed -i 's/.$//' "$1"
+  sedi 's/.$//' "$1"
 }
 
+# [ \t] isn't portable — BSD sed reads it as the set {space, backslash, t}.
+# [[:space:]] means whitespace on both userlands.
 function noextraspaces {
-  sed -i 's/^[ \t]*//;s/[ \t]*$//' "$1"
+  sedi 's/^[[:space:]]*//;s/[[:space:]]*$//' "$1"
 }
 
 function trailingspaces {
-  sed -i '' -e's/[ \t]*$//' "$1"
+  sedi 's/[[:space:]]*$//' "$1"
 }
 
 function trails {
   local file="$1"
   test -f "$file" || return 1
-  sed -i '' 's/[[:space:]]*$//' "$file"
+  sedi 's/[[:space:]]*$//' "$file"
 }
 
 function trailsall {
