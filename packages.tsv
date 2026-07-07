@@ -1,0 +1,48 @@
+# Cross-distro package manifest, consumed by bin/pkg.
+#
+# TAB-separated. First line is the header naming the columns; the first
+# column is the logical name used by callers, each remaining column is a
+# package manager. Use "-" when a manager has no package for that tool.
+#
+# macOS packages stay in the Brewfile — this covers the Linux userlands.
+#
+# Verification status:
+#   apt  - all names confirmed installable on ubuntu:24.04 (container).
+#   apk  - all names confirmed installable on alpine:3.23 w/ community repo.
+#   pacman/dnf - best-known, not yet run against live repos; `pkg` narrates
+#                any miss and is idempotent, so re-running after a fix is safe.
+#
+# Keep rows alphabetized by logical name.
+logical	apt	pacman	apk	dnf
+automake	automake	automake	automake	automake
+bash	bash	bash	bash	bash
+ca-certificates	ca-certificates	ca-certificates	ca-certificates	ca-certificates
+cmake	cmake	cmake	cmake	cmake
+coreutils	coreutils	coreutils	coreutils	coreutils
+curl	curl	curl	curl	curl
+emacs	emacs	emacs	emacs	emacs
+fd	fd-find	fd	fd	fd-find
+firefox	firefox	firefox	firefox	firefox
+gawk	gawk	gawk	gawk	gawk
+git	git	git	git	git
+gnupg	gnupg	gnupg	gnupg	gnupg2
+go	golang	go	go	golang
+graphviz	graphviz	graphviz	graphviz	graphviz
+jq	jq	jq	jq	jq
+less	less	less	less	less
+lynx	lynx	lynx	lynx	lynx
+make	make	make	make	make
+openssh	openssh-client	openssh	openssh-client	openssh-clients
+p7zip	p7zip-full	p7zip	p7zip	p7zip
+pandoc	pandoc	pandoc	pandoc	pandoc
+pinentry	pinentry-curses	pinentry	pinentry	pinentry
+pkg-config	pkg-config	pkgconf	pkgconf	pkgconf
+postgresql-client	postgresql-client	postgresql	postgresql-client	postgresql
+python3	python3	python	python3	python3
+qutebrowser	qutebrowser	qutebrowser	qutebrowser	qutebrowser
+ripgrep	ripgrep	ripgrep	ripgrep	ripgrep
+shellcheck	shellcheck	shellcheck	shellcheck	ShellCheck
+tree	tree	tree	tree	tree
+unzip	unzip	unzip	unzip	unzip
+vim	vim	vim	vim	vim
+wget	wget	wget	wget	wget

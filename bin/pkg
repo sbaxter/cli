@@ -1,0 +1,217 @@
+#!/usr/bin/env bash
+set -eu
+test -z "${DEBUG:-}" || set -x
+
+##
+# pkg: cross-distro package installer.
+#
+# Resolves logical package names to the native name for the detected package
+# manager (via the manifest) and installs them idempotently. The manifest is
+# TAB-separated: the first line is a header naming the columns, the first
+# column is the logical name, and each remaining column is a manager. Use "-"
+# when a manager has no package for a given tool.
+#
+# env:
+#   PKG_MANIFEST - manifest path. default: <script dir>/../packages.tsv
+#   PKG_MANAGER  - override detection (apt|pacman|apk|dnf|zypper|brew)
+##
+
+
+##
+# parameters
+opts="Dhn"
+dry=false
+
+_bin=$(cd "$(dirname "$0")" && pwd)
+: "${PKG_MANIFEST:=$_bin/../packages.tsv}"
+
+function usage {
+  cat << _usage_
+  $(basename "$0"): cross-distro package installer
+
+  usage:
+    $(basename "$0") [-$opts] <command> [args]
+
+    D - turn on debug mode.
+    h - you are here.
+    n - dry run: print what would be installed, change nothing.
+
+  commands:
+    detect                 print the detected package manager
+    logicals               print every logical name in the manifest
+    resolve <logical>...   print native package names for this manager
+    refresh                update the package index
+    install <logical>...   install packages idempotently
+                           (install everything: $(basename "$0") install \$($(basename "$0") logicals))
+
+  env:
+    PKG_MANIFEST  manifest path (default: <script dir>/../packages.tsv)
+    PKG_MANAGER   force a manager instead of auto-detecting
+_usage_
+}
+
+while getopts "$opts" opt; do
+  case "$opt" in
+    D)   DEBUG=true; set -x  ;;
+    h)   usage; exit         ;;
+    n)   dry=true            ;;
+    ?|*) echo; usage; exit 5 ;;
+  esac
+done
+shift $((OPTIND-1))
+##
+
+
+##
+# helpers
+die() { echo "error: $1" >&2; exit 1; }
+
+# run as root directly, otherwise via sudo (Alpine containers run as root
+# with no sudo installed).
+_sudo() {
+  if test "$(id -u)" -eq 0; then
+    "$@"
+  else
+    sudo "$@"
+  fi
+}
+
+# detect_manager: echo the manager name, or fail. honors PKG_MANAGER.
+detect_manager() {
+  if test -n "${PKG_MANAGER:-}"; then
+    echo "$PKG_MANAGER"
+    return 0
+  fi
+  local m
+  for m in apt-get dnf pacman apk zypper brew; do
+    if command -v "$m" >/dev/null 2>&1; then
+      test "$m" = apt-get && echo apt || echo "$m"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# list_logicals: print every logical (first-column) name in the manifest.
+list_logicals() {
+  test -f "$PKG_MANIFEST" || die "manifest not found: $PKG_MANIFEST"
+  awk -F'\t' '
+    /^[[:space:]]*#/ { next }
+    !seen { seen = 1; next }
+    NF >= 2 { print $1 }
+  ' "$PKG_MANIFEST"
+}
+
+# resolve <manager> <logical>...: print native names, one per line, skipping
+# entries marked "-" or absent (warning to stderr for the absent ones).
+resolve() {
+  local mgr="$1"; shift
+  test -f "$PKG_MANIFEST" || die "manifest not found: $PKG_MANIFEST"
+  awk -F'\t' -v mgr="$mgr" -v list="$*" '
+    BEGIN { n = split(list, req, " ") }
+    /^[[:space:]]*#/ { next }
+    !seen { seen = 1; for (i = 1; i <= NF; i++) if ($i == mgr) c = i; next }
+    NF < 2 { next }
+    c { map[$1] = $c }
+    END {
+      if (!c) { print "no manifest column for manager: " mgr > "/dev/stderr"; exit 3 }
+      for (j = 1; j <= n; j++) {
+        name = map[req[j]]
+        if (name == "")  { print "warn: no manifest entry for " req[j] > "/dev/stderr"; continue }
+        if (name == "-") { print "warn: " req[j] " unavailable via " mgr > "/dev/stderr"; continue }
+        print name
+      }
+    }
+  ' "$PKG_MANIFEST"
+}
+
+# is_installed <manager> <native-name>
+is_installed() {
+  case "$1" in
+    apt)    dpkg -s "$2" >/dev/null 2>&1        ;;
+    pacman) pacman -Qi "$2" >/dev/null 2>&1     ;;
+    apk)    apk info -e "$2" >/dev/null 2>&1    ;;
+    dnf)    rpm -q "$2" >/dev/null 2>&1         ;;
+    zypper) rpm -q "$2" >/dev/null 2>&1         ;;
+    brew)   brew list "$2" >/dev/null 2>&1      ;;
+    *)      return 1                            ;;
+  esac
+}
+
+# install_cmd <manager>: echo the install command prefix for that manager.
+install_cmd() {
+  case "$1" in
+    apt)    echo "apt-get install -y"           ;;
+    pacman) echo "pacman -S --needed --noconfirm" ;;
+    apk)    echo "apk add"                      ;;
+    dnf)    echo "dnf install -y"               ;;
+    zypper) echo "zypper install -y"            ;;
+    brew)   echo "brew install"                 ;;
+    *)      die "unknown manager: $1"           ;;
+  esac
+}
+
+# refresh: update the package index for the detected manager.
+refresh() {
+  local mgr; mgr=$(detect_manager) || die "no supported package manager found"
+  echo "==> pkg: refreshing $mgr index"
+  $dry && { echo "  (dry-run) skipped"; return 0; }
+  case "$mgr" in
+    apt)    _sudo apt-get update    ;;
+    pacman) _sudo pacman -Sy        ;;
+    apk)    _sudo apk update        ;;
+    dnf)    _sudo dnf makecache     ;;
+    zypper) _sudo zypper refresh    ;;
+    brew)   brew update             ;;
+  esac
+}
+
+# install <logical>...
+install() {
+  test $# -gt 0 || die "install: no packages given"
+  local mgr; mgr=$(detect_manager) || die "no supported package manager found"
+
+  local names; names=$(resolve "$mgr" "$@")
+  test -n "$names" || { echo "==> pkg: nothing resolved for $mgr"; return 0; }
+
+  local todo="" n
+  for n in $names; do
+    if is_installed "$mgr" "$n"; then
+      echo "  skip: $n (already installed)"
+    else
+      todo="$todo $n"
+    fi
+  done
+  test -n "$todo" || { echo "==> pkg: all present"; return 0; }
+
+  local cmd; cmd=$(install_cmd "$mgr")
+  echo "==> pkg ($mgr): install$todo"
+  if $dry; then
+    echo "  (dry-run) would run: $cmd$todo"
+    return 0
+  fi
+  # word-split $cmd and $todo deliberately
+  # shellcheck disable=SC2086
+  if test "$mgr" = brew; then
+    $cmd $todo
+  else
+    _sudo $cmd $todo
+  fi
+}
+##
+
+
+##
+# main
+cmd="${1:-}"
+test $# -gt 0 && shift || true
+case "$cmd" in
+  detect)   detect_manager || die "no supported package manager found" ;;
+  logicals) list_logicals ;;
+  resolve)  m=$(detect_manager) || die "no supported package manager found"; resolve "$m" "$@" ;;
+  refresh) refresh ;;
+  install) install "$@" ;;
+  ""|help) usage ;;
+  *)       echo "unknown command: $cmd" >&2; echo; usage; exit 5 ;;
+esac
+##

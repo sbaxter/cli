@@ -10,44 +10,30 @@ minimal=""
 : "${UMBRELLA_REPO:=sbaxter/sbaxter}"
 : "${CLI_REPO:=sbaxter/cli}"
 
+os=$(uname -s)
+
 function usage {
   cat << _usage_
-  $(basename "$0"): bootstrap a new Mac from scratch.
+  $(basename "$0"): bootstrap a new machine from scratch (macOS or Linux).
 
   usage:
     $(basename "$0") [-$opts]
 
     D - turn on debug mode.
     h - you are here.
-    m - minimal mode for lightweight machines (e.g. older Macs, kids' Macs):
-        skips gh auth, cli.private (clone/install/gitconfig/Brewfile),
-        and uses Brewfile.lite instead of Brewfile.
+    m - minimal mode for lightweight machines:
+        skips gh auth, cli.private (clone/install/gitconfig/Brewfile), rust,
+        gcloud, gpg; uses Brewfile.lite on macOS.
 
   env:
     GIT_ROOT      - umbrella checkout location. default: \$HOME/git/sbaxter
     UMBRELLA_REPO - multi-repo orchestrator (full mode). default: sbaxter/sbaxter
     CLI_REPO      - public cli repo (minimal mode only). default: sbaxter/cli
 
-  steps:
-    1. ensure macOS
-    2. cache sudo credentials (Homebrew's installer needs sudo)
-    3. install Homebrew (which installs Xcode command line tools)
-    4. install gh
-    5. authenticate with GitHub (browser; generates + uploads SSH key)  [skipped with -m]
-    6. clone \$UMBRELLA_REPO into \$GIT_ROOT, then 'make clone/group/home'
-       (preflight: brew install python3 if /usr/bin/python3 lacks tomllib)
-       [minimal: clone \$CLI_REPO into \$GIT_ROOT/cli, no umbrella]
-    7. run cli/install (+ cli.private/install unless -m)
-    8. run cli.private/bin/mems (wire ~/.claude memory ↔ sbaxter/memory)  [skipped with -m]
-    9. copy cli.private/gitconfig → ~/.gitconfig  [skipped if exists or with -m]
-   10. brew bundle Brewfile (+ cli.private/Brewfile unless -m; or Brewfile.lite with -m)
-   11. initialize rust toolchain (rustup stable + cargo-deny, cargo-release, cargo-cyclonedx)  [skipped with -m]
-   12. install Claude Code (native binary via claude.ai/install.sh)
-   13. apply macOS defaults
-   14. open iTerm2 (restart if running) so custom prefs take effect
-   15. run cli.private/bin/nsca (Netskope CA bundle)  [skipped with -m or no STAgent]
-   16. run cli.private/bin/gcs (gcloud components + config + auth)  [skipped with -m]
-   17. import GPG signing key via cli.private/bin/gpg-restore (if absent)  [skipped with -m]
+  os support:
+    macOS  - Homebrew, macOS defaults, iTerm2, Netskope, gcloud.
+    Linux  - apt/pacman/apk/dnf via cli/bin/pkg + cli/packages.tsv.
+             Skips the macOS-only steps.
 
   idempotent: re-running skips steps already done.
 _usage_
@@ -66,317 +52,372 @@ shift $((OPTIND-1))
 
 
 ##
-# step 1: macOS only
-test "$(uname -s)" = Darwin || { echo "bootstrap: macOS only!" >&2; exit 1; }
+# helpers
+die() { echo "bootstrap: $1" >&2; exit 1; }
+
+# run as root directly, otherwise via sudo.
+_sudo() {
+  if test "$(id -u)" -eq 0; then "$@"; else sudo "$@"; fi
+}
+
+# detect_pm: echo the Linux package manager. Duplicated (minimally) from
+# cli/bin/pkg because gh must be installed before the cli repo — and thus
+# pkg — is cloned.
+detect_pm() {
+  local m
+  for m in apt-get dnf pacman apk zypper; do
+    if command -v "$m" >/dev/null 2>&1; then
+      test "$m" = apt-get && echo apt || echo "$m"
+      return 0
+    fi
+  done
+  return 1
+}
 ##
 
 
 ##
-# step 2: cache sudo credentials — Homebrew's installer needs sudo to
-# write to /opt/homebrew (Apple Silicon) or /usr/local (Intel), and to
-# install Xcode command line tools. cache upfront so the installer doesn't
-# stall on a password prompt mid-stream.
-echo "==> caching sudo credentials (you may be prompted for your password)"
-sudo -v
-
-# keep sudo alive in the background while bootstrap runs;
-# brew bundle install can exceed sudo's default credential cache window
-( while true; do sudo -n true; sleep 60; kill -0 "$$" 2>/dev/null || exit; done ) &
-sudo_keepalive=$!
-trap 'kill "${sudo_keepalive:-}" 2>/dev/null || true' EXIT
+# shared steps
 ##
 
+# cache sudo credentials up front and keep them alive; Homebrew's installer
+# and apt/dnf both need sudo mid-stream. no-op when already root.
+function cache_sudo {
+  test "$(id -u)" -eq 0 && return 0
+  echo "==> caching sudo credentials (you may be prompted for your password)"
+  sudo -v
+  ( while true; do sudo -n true; sleep 60; kill -0 "$$" 2>/dev/null || exit; done ) &
+  sudo_keepalive=$!
+  trap 'kill "${sudo_keepalive:-}" 2>/dev/null || true' EXIT
+}
 
-##
-# step 3: Homebrew (its installer handles Xcode command line tools)
-if ! command -v brew >/dev/null 2>&1; then
-  echo "==> installing Homebrew"
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-fi
-# put brew on PATH for this session (covers Apple Silicon + Intel)
-if test -x /opt/homebrew/bin/brew; then
-  eval "$(/opt/homebrew/bin/brew shellenv)"
-elif test -x /usr/local/bin/brew; then
-  eval "$(/usr/local/bin/brew shellenv)"
-fi
-##
-
-
-##
-# step 4: gh
-if ! command -v gh >/dev/null 2>&1; then
+# ensure gh is installed. macOS: Homebrew. Linux: native package, except
+# apt/dnf where GitHub ships its own repo.
+function ensure_gh {
+  command -v gh >/dev/null 2>&1 && return 0
   echo "==> installing gh"
-  brew install gh
-fi
-##
+  case "$os" in
+    Darwin) brew install gh ;;
+    Linux)
+      case "$(detect_pm)" in
+        pacman) _sudo pacman -S --needed --noconfirm github-cli ;;
+        apk)    _sudo apk add github-cli ;;
+        dnf)    _sudo dnf install -y gh ;;
+        apt)    linux_gh_apt_repo ;;
+        *)      die "don't know how to install gh on this system" ;;
+      esac ;;
+  esac
+}
 
-
-##
-# step 5: gh auth (interactive — generates SSH key and uploads to GitHub).
-# request admin:public_key upfront so step 5b can manage authentication
-# keys without a second browser dance via 'gh auth refresh'.
-if test -z "$minimal"; then
+# gh auth (interactive). request admin:public_key up front so ensure_ssh can
+# upload a key via 'gh auth refresh' without a second browser dance.
+function gh_auth {
+  test -n "$minimal" && return 0
   if ! gh auth status 2>&1 | grep -q 'admin:public_key'; then
     echo "==> authenticating with GitHub (browser will open)"
     gh auth login --git-protocol ssh --web -s admin:public_key
   fi
-fi
-##
+}
 
+# SSH plumbing for github.com: known_hosts seed, a local ed25519 key loaded
+# into the agent (macOS keychain when available), and its public half on
+# GitHub.
+function ensure_ssh {
+  test -n "$minimal" && return 0
 
-##
-# step 5b: SSH plumbing for github.com. gh auth login --git-protocol ssh
-# *prompts* to generate+upload a key but is easy to bypass interactively,
-# leaving auth recorded with no key on GitHub — subsequent SSH clones then
-# fail with "Permission denied (publickey)". make all three guarantees
-# explicit and idempotent here:
-#   a. known_hosts has github.com (no host-key prompt on first clone)
-#   b. a local ed25519 key exists and is loaded into the macOS keychain
-#   c. that key's public half is uploaded to GitHub
-if test -z "$minimal"; then
-  mkdir -p "$HOME/.ssh"
-  chmod 700 "$HOME/.ssh"
-  touch "$HOME/.ssh/known_hosts"
-  chmod 600 "$HOME/.ssh/known_hosts"
+  mkdir -p "$HOME/.ssh"; chmod 700 "$HOME/.ssh"
+  touch "$HOME/.ssh/known_hosts"; chmod 600 "$HOME/.ssh/known_hosts"
 
-  # a. known_hosts
   if ! ssh-keygen -F github.com -f "$HOME/.ssh/known_hosts" >/dev/null 2>&1; then
     echo "==> seeding github.com host keys into ~/.ssh/known_hosts"
     ssh-keyscan -t rsa,ecdsa,ed25519 github.com 2>/dev/null >> "$HOME/.ssh/known_hosts"
   fi
 
-  # b. local ed25519 key + macOS keychain. ssh-add is idempotent —
-  # loading an already-loaded key is a no-op — so skip the membership
-  # check and just always run it.
-  ssh_key="$HOME/.ssh/id_ed25519"
+  local ssh_key="$HOME/.ssh/id_ed25519"
   if ! test -f "$ssh_key"; then
     echo "==> generating ed25519 SSH key at $ssh_key"
-    ssh-keygen -t ed25519 -f "$ssh_key" -N "" -C "$(whoami)@$(hostname -s)"
+    ssh-keygen -t ed25519 -f "$ssh_key" -N "" -C "$(whoami)@$(hostname -s 2>/dev/null || hostname)"
   fi
-  echo "==> loading $ssh_key into ssh-agent (macOS keychain)"
-  ssh-add --apple-use-keychain "$ssh_key" 2>/dev/null \
-    || ssh-add -K "$ssh_key" 2>/dev/null \
-    || ssh-add "$ssh_key" 2>/dev/null \
-    || echo "warning: ssh-add failed; key generated but not loaded into agent" >&2
 
-  # c. upload to GitHub. scope was granted in step 5. match by key body
-  # (field 2) so a rename on GitHub doesn't cause dupes.
+  echo "==> loading $ssh_key into ssh-agent"
+  if test "$os" = Darwin; then
+    ssh-add --apple-use-keychain "$ssh_key" 2>/dev/null \
+      || ssh-add -K "$ssh_key" 2>/dev/null \
+      || ssh-add "$ssh_key" 2>/dev/null \
+      || echo "warning: ssh-add failed; key generated but not loaded into agent" >&2
+  else
+    # start an agent for this session if none is reachable
+    ssh-add -l >/dev/null 2>&1 || eval "$(ssh-agent -s)" >/dev/null
+    ssh-add "$ssh_key" 2>/dev/null \
+      || echo "warning: ssh-add failed; key generated but not loaded into agent" >&2
+  fi
+
+  local key_body
   key_body=$(cut -d' ' -f2 "$ssh_key.pub")
   if ! gh ssh-key list 2>/dev/null | grep -qF "$key_body"; then
     echo "==> uploading $ssh_key.pub to GitHub"
-    gh ssh-key add "$ssh_key.pub" --title "$(whoami)@$(hostname -s) (bootstrap)"
+    gh ssh-key add "$ssh_key.pub" --title "$(whoami)@$(hostname -s 2>/dev/null || hostname) (bootstrap)"
   fi
-fi
-##
+}
 
-
-##
-# step 5c: python with tomllib. umbrella's bin/_projects.py (invoked by
-# `make clone/group/home` in step 6) needs tomllib (Python 3.11+) or tomli;
-# Apple's /usr/bin/python3 is 3.9 on fresh Macs and has neither. cli/Brewfile
-# installs python@3.13/3.14 but doesn't run until step 10, so install ahead
-# of need. minimal mode skips the umbrella+make path entirely.
-#
-# Install `python3` (the meta alias for the current default, today
-# python@3.14), not a pinned `python@3.X`: only the current-default formula
-# links `python3` into /opt/homebrew/bin. A pinned older version installs
-# its `python3` only into the formula's libexec, leaving Apple's 3.9 first
-# on PATH and step 6 still broken. `hash -r` clears bash's command cache
-# from the probe above so the next `python3` lookup finds the new binary.
-if test -z "$minimal" && ! python3 -c 'import tomllib' 2>/dev/null; then
+# python with tomllib — the umbrella's make needs it (Python 3.11+).
+function ensure_python {
+  test -n "$minimal" && return 0
+  python3 -c 'import tomllib' 2>/dev/null && return 0
   echo "==> installing python3 (needed by umbrella's make)"
-  brew install python3
+  case "$os" in
+    Darwin) brew install python3 ;;
+    Linux)
+      case "$(detect_pm)" in
+        apt)    _sudo apt-get install -y python3 ;;
+        pacman) _sudo pacman -S --needed --noconfirm python ;;
+        apk)    _sudo apk add python3 ;;
+        dnf)    _sudo dnf install -y python3 ;;
+        *)      die "don't know how to install python3 on this system" ;;
+      esac ;;
+  esac
   hash -r
-fi
-##
+}
 
-
-##
-# step 6: clone repos.
-# minimal mode: plain git clone of cli (public; gh auth was skipped).
-# full mode: clone the umbrella into $GIT_ROOT, then let its own tooling
-# (make clone/group/home → bin/clone-one.sh per entry in etc/projects.toml)
-# pull cli, cli.private, memory. umbrella is source of truth for membership.
-mkdir -p "$(dirname "$GIT_ROOT")"
-if test -n "$minimal"; then
-  if ! test -d "$GIT_ROOT/cli/.git"; then
-    echo "==> cloning $CLI_REPO into $GIT_ROOT/cli"
-    mkdir -p "$GIT_ROOT"
-    git clone "https://github.com/$CLI_REPO" "$GIT_ROOT/cli"
-  fi
-else
-  if ! test -d "$GIT_ROOT/.git"; then
-    echo "==> cloning $UMBRELLA_REPO into $GIT_ROOT"
-    gh repo clone "$UMBRELLA_REPO" "$GIT_ROOT"
-  fi
-  echo "==> make -C $GIT_ROOT clone/group/home"
-  make -C "$GIT_ROOT" clone/group/home
-fi
-##
-
-
-##
-# step 7: link dotfiles
-echo "==> cli/install"
-"$GIT_ROOT/cli/install" -b .bak
-if test -z "$minimal"; then
-  echo "==> cli.private/install"
-  "$GIT_ROOT/cli.private/install" -b .bak
-fi
-##
-
-
-##
-# step 8: wire ~/.claude memory dirs to the sbaxter/memory repo via mems.
-# idempotent — promotes any local memory dirs into the repo, then ensures
-# symlinks back. skipped if mems script or memory repo aren't present.
-if test -z "$minimal" \
-   && test -x "$GIT_ROOT/cli.private/bin/mems" \
-   && test -d "$GIT_ROOT/memory"; then
-  echo "==> cli.private/bin/mems"
-  "$GIT_ROOT/cli.private/bin/mems"
-fi
-##
-
-
-##
-# step 9: gitconfig — seed from cli.private only if ~/.gitconfig doesn't
-# already exist. preserves local edits on re-runs; to force a refresh,
-# remove ~/.gitconfig and re-run bootstrap.
-if test -z "$minimal" && ! test -e "$HOME/.gitconfig"; then
-  echo "==> copying cli.private/gitconfig → ~/.gitconfig"
-  cp "$GIT_ROOT/cli.private/gitconfig" "$HOME/.gitconfig"
-fi
-##
-
-
-##
-# step 10: brew bundles
-if test -n "$minimal"; then
-  echo "==> brew bundle: cli/Brewfile.lite"
-  brew bundle --file="$GIT_ROOT/cli/Brewfile.lite"
-else
-  echo "==> brew bundle: cli/Brewfile"
-  brew bundle --file="$GIT_ROOT/cli/Brewfile"
-  echo "==> brew bundle: cli.private/Brewfile"
-  brew bundle --file="$GIT_ROOT/cli.private/Brewfile"
-fi
-##
-
-
-##
-# step 11: rust toolchain. install rustup via the upstream installer
-# (rust-lang.org's canonical path) rather than brew — the brew formula is
-# keg-only and pins a single toolchain, defeating rust-toolchain.toml pinning
-# and component management. bootstrap stable + the cargo subcommands the
-# dotfiles depend on (cargo-deny is required by the ci() function in
-# cli.private/bash_profile). --no-modify-path because bash_profile already
-# sources ~/.cargo/env.
-if test -z "$minimal" && ! test -x "$HOME/.cargo/bin/rustc"; then
-  echo "==> initializing rust toolchain"
-  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
-    | sh -s -- -y --default-toolchain stable --profile default --no-modify-path
-fi
-# shellcheck disable=SC1091
-test -f "$HOME/.cargo/env" && source "$HOME/.cargo/env"
-
-if test -z "$minimal" && command -v cargo >/dev/null 2>&1; then
-  for crate in cargo-deny cargo-release cargo-cyclonedx; do
-    sub="${crate#cargo-}"
-    if ! cargo --list 2>/dev/null | grep -qE "^[[:space:]]+${sub}([[:space:]]|$)"; then
-      echo "==> cargo install $crate"
-      cargo install --locked "$crate"
+# clone repos. minimal: plain public clone of cli. full: umbrella + its own
+# tooling (make clone/group/home) pulls cli, cli.private, memory.
+function clone_repos {
+  mkdir -p "$(dirname "$GIT_ROOT")"
+  if test -n "$minimal"; then
+    if ! test -d "$GIT_ROOT/cli/.git"; then
+      echo "==> cloning $CLI_REPO into $GIT_ROOT/cli"
+      mkdir -p "$GIT_ROOT"
+      git clone "https://github.com/$CLI_REPO" "$GIT_ROOT/cli"
     fi
-  done
-fi
-##
-
-
-##
-# step 12: Claude Code (native binary). install script is idempotent and
-# also handles updates; binary lands at ~/.local/bin/claude, which may not
-# be on PATH yet during bootstrap, so check the file directly.
-if ! test -x "$HOME/.local/bin/claude"; then
-  echo "==> installing Claude Code"
-  curl -fsSL https://claude.ai/install.sh | bash
-fi
-##
-
-
-##
-# step 13: apply macOS defaults
-echo "==> cli/bin/macos-defaults"
-"$GIT_ROOT/cli/bin/macos-defaults"
-##
-
-
-##
-# step 14: open iTerm2 (restart if running) so the custom prefs folder
-# wired up by macos-defaults takes effect. bootstrap is invoked from
-# Terminal.app, so killing iTerm2 won't kill our shell.
-if pgrep -q iTerm2; then
-  echo "==> restarting iTerm2 to pick up custom prefs"
-  osascript -e 'tell application "iTerm" to quit' >/dev/null 2>&1 || true
-  # give iTerm a moment to shut down cleanly before relaunching
-  sleep 1
-else
-  echo "==> opening iTerm2"
-fi
-open -a iTerm
-##
-
-
-##
-# step 15: Netskope CA bundle. nsca writes ~/.config/netskope/ca-bundle.pem
-# (Mozilla/system roots + MDM + Netskope) and netskope-ca.pem (bare CA for
-# additive use cases like dvcn). gated on STAgent being present so this is
-# a no-op on non-corporate Macs. exports the bundle into bootstrap's env so
-# subsequent steps that read REQUESTS_CA_BUNDLE etc. inherit it.
-if test -z "$minimal" \
-   && test -d "/Library/Application Support/Netskope/STAgent" \
-   && test -x "$GIT_ROOT/cli.private/bin/nsca"; then
-  echo
-  echo "==> cli.private/bin/nsca"
-  "$GIT_ROOT/cli.private/bin/nsca"
-  _ns="$HOME/.config/netskope/ca-bundle.pem"
-  if test -f "$_ns"; then
-    export REQUESTS_CA_BUNDLE="$_ns"
-    export CURL_CA_BUNDLE="$_ns"
-    export NODE_EXTRA_CA_CERTS="$_ns"
+  else
+    if ! test -d "$GIT_ROOT/.git"; then
+      echo "==> cloning $UMBRELLA_REPO into $GIT_ROOT"
+      gh repo clone "$UMBRELLA_REPO" "$GIT_ROOT"
+    fi
+    echo "==> make -C $GIT_ROOT clone/group/home"
+    make -C "$GIT_ROOT" clone/group/home
   fi
-  unset _ns
-fi
-##
+}
 
+# link dotfiles.
+function link_dotfiles {
+  echo "==> cli/install"
+  "$GIT_ROOT/cli/install" -b .bak
+  if test -z "$minimal"; then
+    echo "==> cli.private/install"
+    "$GIT_ROOT/cli.private/install" -b .bak
+  fi
+}
 
-##
-# step 16: gcloud setup via gcs (components + project config + browser auth +
-# docker credHelper + ADC quota project). interactive (browser). non-fatal —
-# bootstrap continues if the user cancels.
-if test -z "$minimal" && test -x "$GIT_ROOT/cli.private/bin/gcs"; then
-  echo
-  echo "==> cli.private/bin/gcs"
-  "$GIT_ROOT/cli.private/bin/gcs" || true
-fi
-##
+# wire ~/.claude memory dirs to the sbaxter/memory repo via mems.
+function wire_mems {
+  test -n "$minimal" && return 0
+  if test -x "$GIT_ROOT/cli.private/bin/mems" && test -d "$GIT_ROOT/memory"; then
+    echo "==> cli.private/bin/mems"
+    "$GIT_ROOT/cli.private/bin/mems"
+  fi
+}
 
+# seed ~/.gitconfig from cli.private only if it doesn't already exist.
+function seed_gitconfig {
+  test -n "$minimal" && return 0
+  if ! test -e "$HOME/.gitconfig"; then
+    echo "==> copying cli.private/gitconfig → ~/.gitconfig"
+    cp "$GIT_ROOT/cli.private/gitconfig" "$HOME/.gitconfig"
+  fi
+}
 
-##
-# step 17: import GPG signing key if missing. gpg-restore auto-detects a
-# transferred file in ~/Downloads or prompts. interactive (passphrase).
-if test -z "$minimal"; then
+# install packages. macOS: brew bundle. Linux: the whole manifest via pkg.
+function install_packages {
+  case "$os" in
+    Darwin)
+      if test -n "$minimal"; then
+        echo "==> brew bundle: cli/Brewfile.lite"
+        brew bundle --file="$GIT_ROOT/cli/Brewfile.lite"
+      else
+        echo "==> brew bundle: cli/Brewfile"
+        brew bundle --file="$GIT_ROOT/cli/Brewfile"
+        echo "==> brew bundle: cli.private/Brewfile"
+        brew bundle --file="$GIT_ROOT/cli.private/Brewfile"
+      fi ;;
+    Linux)
+      local pkg="$GIT_ROOT/cli/bin/pkg"
+      echo "==> pkg refresh + install (cli/packages.tsv)"
+      "$pkg" refresh
+      # shellcheck disable=SC2046
+      "$pkg" install $("$pkg" logicals)
+      linux_fd_fixup ;;
+  esac
+}
+
+# rust toolchain via rustup (cross-platform installer).
+function ensure_rust {
+  test -n "$minimal" && return 0
+  if ! test -x "$HOME/.cargo/bin/rustc"; then
+    echo "==> initializing rust toolchain"
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs \
+      | sh -s -- -y --default-toolchain stable --profile default --no-modify-path
+  fi
+  # shellcheck disable=SC1091
+  test -f "$HOME/.cargo/env" && . "$HOME/.cargo/env"
+
+  if command -v cargo >/dev/null 2>&1; then
+    local crate sub
+    for crate in cargo-deny cargo-release cargo-cyclonedx; do
+      sub="${crate#cargo-}"
+      if ! cargo --list 2>/dev/null | grep -qE "^[[:space:]]+${sub}([[:space:]]|$)"; then
+        echo "==> cargo install $crate"
+        cargo install --locked "$crate"
+      fi
+    done
+  fi
+}
+
+# Claude Code (native binary). installer is idempotent and self-updating.
+function ensure_claude {
+  if ! test -x "$HOME/.local/bin/claude"; then
+    echo "==> installing Claude Code"
+    curl -fsSL https://claude.ai/install.sh | bash
+  fi
+}
+
+# import GPG signing key if missing (interactive: passphrase).
+function restore_gpg {
+  test -n "$minimal" && return 0
+  local signingkey
   signingkey=$(git config --global user.signingkey 2>/dev/null || true)
   if test -n "$signingkey" && ! gpg --list-secret-keys "$signingkey" >/dev/null 2>&1; then
     echo
     echo "==> GPG signing key $signingkey missing — running gpg-restore"
     "$GIT_ROOT/cli.private/bin/gpg-restore" || true
   fi
+}
+##
+
+
+##
+# macOS-only steps
+##
+
+# Homebrew (its installer handles Xcode command line tools).
+function mac_homebrew {
+  if ! command -v brew >/dev/null 2>&1; then
+    echo "==> installing Homebrew"
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  fi
+  if test -x /opt/homebrew/bin/brew; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif test -x /usr/local/bin/brew; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  fi
+}
+
+function mac_defaults {
+  echo "==> cli/bin/macos-defaults"
+  "$GIT_ROOT/cli/bin/macos-defaults"
+}
+
+# restart iTerm2 (or open it) so custom prefs take effect. bootstrap runs
+# from Terminal.app, so killing iTerm2 won't kill our shell.
+function mac_iterm {
+  if pgrep -q iTerm2; then
+    echo "==> restarting iTerm2 to pick up custom prefs"
+    osascript -e 'tell application "iTerm" to quit' >/dev/null 2>&1 || true
+    sleep 1
+  else
+    echo "==> opening iTerm2"
+  fi
+  open -a iTerm
+}
+
+# Netskope CA bundle (corporate MITM trust). gated on STAgent being present.
+function mac_nsca {
+  test -n "$minimal" && return 0
+  if test -d "/Library/Application Support/Netskope/STAgent" \
+     && test -x "$GIT_ROOT/cli.private/bin/nsca"; then
+    echo
+    echo "==> cli.private/bin/nsca"
+    "$GIT_ROOT/cli.private/bin/nsca"
+    local ns="$HOME/.config/netskope/ca-bundle.pem"
+    if test -f "$ns"; then
+      export REQUESTS_CA_BUNDLE="$ns"
+      export CURL_CA_BUNDLE="$ns"
+      export NODE_EXTRA_CA_CERTS="$ns"
+    fi
+  fi
+}
+
+# gcloud setup (interactive; non-fatal).
+function mac_gcs {
+  test -n "$minimal" && return 0
+  if test -x "$GIT_ROOT/cli.private/bin/gcs"; then
+    echo
+    echo "==> cli.private/bin/gcs"
+    "$GIT_ROOT/cli.private/bin/gcs" || true
+  fi
+}
+##
+
+
+##
+# Linux-only steps
+##
+
+# add GitHub's apt repo and install gh (canonical cli.github.com recipe).
+function linux_gh_apt_repo {
+  _sudo mkdir -p -m 755 /etc/apt/keyrings
+  curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+    | _sudo tee /etc/apt/keyrings/githubcli-archive-keyring.gpg >/dev/null
+  _sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
+  echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+    | _sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+  _sudo apt-get update
+  _sudo apt-get install -y gh
+}
+
+# Debian/Fedora ship fd as `fdfind` to avoid a name clash; symlink `fd` into
+# ~/.local/bin (already on PATH via bash_profile) so muscle memory works.
+function linux_fd_fixup {
+  if command -v fdfind >/dev/null 2>&1 && ! command -v fd >/dev/null 2>&1; then
+    mkdir -p "$HOME/.local/bin"
+    ln -sf "$(command -v fdfind)" "$HOME/.local/bin/fd"
+    echo "  link: ~/.local/bin/fd → $(command -v fdfind)"
+  fi
+}
+##
+
+
+##
+# main
+case "$os" in
+  Darwin|Linux) ;;
+  *) die "unsupported OS: $os (macOS and Linux only)" ;;
+esac
+
+cache_sudo
+test "$os" = Darwin && mac_homebrew
+
+ensure_gh
+gh_auth
+ensure_ssh
+ensure_python
+clone_repos
+link_dotfiles
+wire_mems
+seed_gitconfig
+install_packages
+ensure_rust
+ensure_claude
+
+if test "$os" = Darwin; then
+  mac_defaults
+  mac_iterm
+  mac_nsca
+  mac_gcs
 fi
-##
 
+restore_gpg
 
-##
-# done
 echo
 echo "==> bootstrap done."
 echo
