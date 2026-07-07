@@ -547,15 +547,14 @@ function howbigis {
   du -sh "$1" | awk '{print $1}'
 }
 
-if test "$(uname -s)" = Darwin; then
-  function pb {
-    pbcopy < "$1"
-  }
-  function pbclear {
-    pbcopy < /dev/null
-  }
-  _alias pc || alias pc="tr -d '\n' | pbcopy"
-fi
+# clipboard via bin/clip (portable across macOS/Wayland/X11)
+function pb {
+  clip < "$1"
+}
+function pbclear {
+  clip < /dev/null
+}
+_alias pc || alias pc="tr -d '\n' | clip"
 
 function l80 {
   local pattern=.

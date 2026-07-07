@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -eu
+test -z "${DEBUG:-}" || set -x
+
+##
+# parameters
+opts="Dho"
+paste=false
+
+function usage {
+  cat << _usage_
+  $(basename "$0"): pipe stdin to (or read from) the system clipboard
+
+  usage:
+    ... | $(basename "$0")        copy stdin to the clipboard
+    $(basename "$0") -o           paste clipboard contents to stdout
+
+    D - turn on debug mode.
+    h - you are here.
+    o - output (paste) clipboard to stdout instead of copying stdin.
+
+  backend, first available wins:
+    macOS          pbcopy / pbpaste
+    Linux/Wayland  wl-copy / wl-paste   (needs WAYLAND_DISPLAY)
+    Linux/X11      xclip / xsel         (needs DISPLAY)
+_usage_
+}
+
+while getopts "$opts" opt; do
+  case "$opt" in
+    D)   DEBUG=true; set -x  ;;
+    h)   usage; exit         ;;
+    o)   paste=true          ;;
+    ?|*) echo; usage; exit 5 ;;
+  esac
+done
+shift $((OPTIND-1))
+##
+
+
+##
+# helpers
+die() { echo "error: $1" >&2; exit 1; }
+##
+
+
+##
+# main: dispatch to the first available backend. pbcopy only exists on
+# macOS, so it can win unconditionally; on Linux prefer Wayland over X11.
+if command -v pbcopy >/dev/null 2>&1; then
+  if $paste; then pbpaste; else pbcopy; fi
+elif test -n "${WAYLAND_DISPLAY:-}" && command -v wl-copy >/dev/null 2>&1; then
+  if $paste; then wl-paste; else wl-copy; fi
+elif command -v xclip >/dev/null 2>&1; then
+  if $paste; then xclip -selection clipboard -o; else xclip -selection clipboard; fi
+elif command -v xsel >/dev/null 2>&1; then
+  if $paste; then xsel --clipboard --output; else xsel --clipboard --input; fi
+else
+  die "no clipboard backend found (install wl-clipboard, xclip, or xsel)"
+fi
+##
