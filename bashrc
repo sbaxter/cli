@@ -241,15 +241,17 @@ function gshow {
 #
 # Private repo must define:
 #   ORG_LIST  - space-separated list of org aliases (e.g. "shb acme")
-#   _org_data - function that echoes "prompt_color:gh_org:aws_prefix" for a
-#               given alias, or returns 1 if unknown.
+#   _org_data - function that echoes
+#               "prompt_color:forge_org:aws_prefix:forge_host" for a given
+#               alias, or returns 1 if unknown. forge_host is optional and
+#               defaults to github.com when empty, so GitHub rows may omit it.
 #
 # Example:
 #   ORG_LIST="shb acme"
 #   function _org_data {
 #     case "$1" in
-#       shb)  echo "B_CYAN:sbaxter:" ;;
-#       acme) echo "B_YELLOW:AcmeCorp:ACME" ;;
+#       shb)  echo "B_CYAN:sbaxter:" ;;                        # github.com
+#       acme) echo "B_YELLOW:AcmeCorp:ACME:gitlab.acme.net" ;; # self-hosted
 #       *)    return 1 ;;
 #     esac
 #   }
@@ -266,11 +268,13 @@ function org {
     return 1
   }
 
-  local color gh_org aws_prefix
-  IFS=':' read -r color gh_org aws_prefix <<< "$def"
+  local color forge_org aws_prefix forge_host
+  IFS=':' read -r color forge_org aws_prefix forge_host <<< "$def"
 
-  export ORG="$gh_org"
-  export GH_ORG="$gh_org"
+  export ORG="$forge_org"
+  export FORGE_ORG="$forge_org"
+  export FORGE_HOST="${forge_host:-github.com}"
+  export GH_ORG="$forge_org"  # deprecated alias for FORGE_ORG
   export SYSTEM=""
   export USER_TAG="(\[${!color}\]${name}\[${NO_COLOR}${PROMPT_COLOR}\])"
 
@@ -305,7 +309,7 @@ function sys {
     return
   fi
 
-  local target="$REPO/$GH_ORG/$1"
+  local target="$REPO/$FORGE_ORG/$1"
   if test -d "$target"; then
     export SYSTEM="$1"
   else
@@ -317,7 +321,7 @@ function sys {
 # tab completion for sys
 function _sys_complete {
   local cur="${COMP_WORDS[COMP_CWORD]}"
-  local base="$REPO/$GH_ORG"
+  local base="$REPO/$FORGE_ORG"
   test -d "$base" || return 0
   # shellcheck disable=SC2207
   COMPREPLY=( $(compgen -W "$(find "$base" -mindepth 1 -maxdepth 1 -type d \
@@ -330,17 +334,17 @@ complete -F _sys_complete sys
 
 ##
 # repo: navigate to a repository
-#   repo                     cd to $REPO/$GH_ORG/[$SYSTEM/]
-#   repo <name>              cd to $REPO/$GH_ORG/[$SYSTEM/]<name>
-#   repo <system>/<name>     cd to $REPO/$GH_ORG/<system>/<name> (inline)
+#   repo                     cd to $REPO/$FORGE_ORG/[$SYSTEM/]
+#   repo <name>              cd to $REPO/$FORGE_ORG/[$SYSTEM/]<name>
+#   repo <system>/<name>     cd to $REPO/$FORGE_ORG/<system>/<name> (inline)
 function repo {
-  local target="$REPO/$GH_ORG"
+  local target="$REPO/$FORGE_ORG"
   test -n "$SYSTEM" && target="$target/$SYSTEM"
 
   if test -n "$1"; then
     if test "${1#*/}" != "$1"; then
       # slash detected — inline system/repo
-      target="$REPO/$GH_ORG/$1"
+      target="$REPO/$FORGE_ORG/$1"
     else
       target="$target/$1"
     fi
@@ -352,7 +356,7 @@ function repo {
 # tab completion for repo
 function _repo_complete {
   local cur="${COMP_WORDS[COMP_CWORD]}"
-  local base="$REPO/$GH_ORG"
+  local base="$REPO/$FORGE_ORG"
 
   if test -n "$SYSTEM"; then
     base="$base/$SYSTEM"
@@ -362,7 +366,7 @@ function _repo_complete {
   if test "${cur#*/}" != "$cur"; then
     local sys="${cur%%/*}"
     local partial="${cur#*/}"
-    local sysdir="$REPO/$GH_ORG/$sys"
+    local sysdir="$REPO/$FORGE_ORG/$sys"
     test -d "$sysdir" || return 0
     # shellcheck disable=SC2207
     COMPREPLY=( $(compgen -P "$sys/" -W "$(find "$sysdir" -mindepth 1 -maxdepth 1 \
@@ -385,18 +389,25 @@ complete -F _repo_complete repo
 #   gclone <remote> <local-name>  clone as local-name
 function gclone {
   test -n "$1" || { echo "usage: gclone <remote> [local-name]" >&2; return 1; }
-  test -n "$GH_ORG" || { echo "GH_ORG not set. run org first." >&2; return 1; }
+  test -n "$FORGE_ORG" || { echo "FORGE_ORG not set. run org first." >&2; return 1; }
 
   local remote="$1"
   local localName="${2:-$remote}"
-  local dest="$REPO/$GH_ORG"
+  local dest="$REPO/$FORGE_ORG"
 
   test -n "$SYSTEM" && dest="$dest/$SYSTEM"
   mkdir -p "$dest"
 
-  git clone "git@github.com:$GH_ORG/$remote" "$dest/$localName" \
+  git clone "git@${FORGE_HOST:-github.com}:$FORGE_ORG/$remote" "$dest/$localName" \
     && cd "$dest/$localName" || return
 }
+# -----------------------------------------------------------------------------
+
+
+# PRIVATES
+# -----------------------------------------------------------------------------
+test -f "$HOME/.bash_private" && source "$HOME/.bash_private"
+test -f "$HOME/.bash_profile" && source "$HOME/.bash_profile"
 # -----------------------------------------------------------------------------
 
 
@@ -627,7 +638,7 @@ if test "$(uname -s)" = Darwin; then
     alias brup="brew upgrade --no-ask && brew cleanup"
   fi
 elif type apt-get >/dev/null 2>&1; then
-  alias brup="sudo apt-get update && sudo apt-get upgrade"
+  alias brup="sudo apt full-upgrade && sudo apt autoremove"
 elif type yum >/dev/null 2>&1; then
   alias brup="sudo yum update"
 elif type pacman >/dev/null 2>&1; then

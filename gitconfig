@@ -25,7 +25,12 @@
   new = white
 [url "git@github.com:"]
   insteadOf = https://github.com/
+; For a self-hosted GitLab, mirror the rewrite once the host is known:
+; [url "git@<gitlab-host>:"]
+;   insteadOf = https://<gitlab-host>/
 [gpg]
   program = gpg
 [github]
   user = <GITHUB_USER>
+[gitlab]
+  user = <GITLAB_USER>

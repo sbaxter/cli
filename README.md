@@ -89,7 +89,7 @@ org shb                    # switch org context
 sys myapp                  # set system (repo group)
 repo frontend              # cd to ~/git/sbaxter/myapp/frontend
 repo myapp/frontend        # inline system/repo (no sys needed)
-gclone myrepo              # clone into ~/git/$GH_ORG/[$SYSTEM/]myrepo
+gclone myrepo              # clone into ~/git/$FORGE_ORG/[$SYSTEM/]myrepo
 gclone homebrew-ctx brew   # clone as different local name
 ```
 
