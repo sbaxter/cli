@@ -644,6 +644,23 @@ elif type yum >/dev/null 2>&1; then
 elif type pacman >/dev/null 2>&1; then
   alias brup="sudo pacman -Syu"
 fi
+
+function isi {
+  if test "$(uname -s)" = Darwin; then
+    brew=/opt/homebrew/bin/brew
+    test -x $brew || brew=/usr/local/bin/brew
+    if test -x $brew; then
+      eval "$($brew shellenv)"
+      brew list $1
+    fi
+  elif type apt-get >/dev/null 2>&1; then
+    apt list --installed $1
+  elif type yum >/dev/null 2>&1; then
+    yum list installed $1
+  elif type pacman >/dev/null 2>&1; then
+    pacman -Q $1
+  fi
+}
 # -----------------------------------------------------------------------------
 
 
