@@ -1,20 +1,84 @@
-# Editor/OS artifacts
-*.diff
-*.err
-*.log
-*.orig
-*.rej
-*.swo
-*.swp
-*~
-.DS_Store
+# Local Environment
+.env
+.env.local
+.env.*.local
+
+# OS Artifacts
+.DS_Store/
 ._*
 Thumbs.db
-.cache
 
-# Build artifacts
-cmake-build-*
+# Local IDE & Editor Settings
+.idea/
+.vscode/
+*~
+*.bak
+*.ntvs*
+*.njsproj
+*.orig
+*.sln
+*.suo
+*.swp
+*.swo
 
-# Agents
-**/.claude/settings.local.json
-**/.claude/worktrees/
+# git
+*.diff
+*.patch
+*.rej
+
+# AI Assistants & IDE Settings
+.antigravity/
+.claude/
+.codex/
+.cursor/
+
+# Logs & Caches
+.cache/
+.caches/
+*.cache
+*.err
+*.log
+*debug.log*
+*error.log*
+
+# Dependencies & Package Managers
+.venv/
+env/
+node_modules/
+vendor/
+venv/
+
+# Build & Output
+build/
+dist/
+out/
+target/
+
+# Binaries & Libraries
+*.app
+*.bin
+*.dll
+*.dylib
+*.exe
+*.out
+*.pdf
+*.so
+
+# Compiled Code
+__pycache__/
+*.a
+*.class
+*.o
+*.pyc
+*.pyo
+
+# Archives
+*.tar
+*.tar.*
+*.bz2
+*.tbz
+*.tbz2
+*.gz
+*.tgz
+*.xz
+*.txz
